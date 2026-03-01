@@ -63,5 +63,5 @@ iOS Mobil Uygulama
 Web Uygulaması
 
 
-## **Proje Durumu**
-Aktif geliştirme aşamasındadır. Yeni modüller ve analiz sistemi üzerinde çalışmalar devam etmektedir.
+## **Dokümantasyon**
+[Gereksinim Analizi](DiyetTakvim/Gereksinim-Analizi.md)
