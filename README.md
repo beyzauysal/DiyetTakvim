@@ -2,7 +2,7 @@
 
 
 <p align="center">
-  <img src="DiyetTakvimpng" width="700"/>
+  <img src="DiyetTakvim.png" width="700"/>
 </p>
 
 
