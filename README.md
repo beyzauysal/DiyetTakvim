@@ -1,6 +1,12 @@
 # **DiyetTakvim**
 
 
+<p align="center">
+  <img src="DiyetTakvimpng" width="700"/>
+</p>
+
+
+
 DiyetTakvim, diyetisyenler ve danışanlar için geliştirilen, randevu yönetimi, danışan takibi ve veri analizi odaklı dijital bir takvim ve planlama sistemidir. Proje hem mobil uygulama hem de web platformu olarak tasarlanmıştır. Amaç, diyetisyenlerin operasyonel yükünü azaltmak ve danışan takibini daha sistematik hale getirmektir.
 
 
