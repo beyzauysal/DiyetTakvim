@@ -2,33 +2,14 @@ openapi: 3.0.3
 info:
   title: DiyetTakvim API'si
   version: 1.0.0
-  description: |
+  description: >
     Bu API, diyetisyen ve danışan kullanıcılarının kayıt, giriş, bağlantı kurma,
     uygunluk oluşturma, randevu yönetimi ve yapay zeka destekli kalori takibi
     işlemlerini gerçekleştirmek için tasarlanmış bir RESTful servistir.
     Sistem, rol bazlı kullanıcı yapısını destekler ve JWT tabanlı kimlik doğrulama ile korunmaktadır.
-
-    ## Özellikler
-    - Rol seçerek kullanıcı kaydı
-    - Kullanıcı girişi
-    - Diyetisyen profili oluşturma
-    - Davet kodu üretme
-    - Davet kodu ile danışan-diyetisyen bağlantısı kurma
-    - Danışanları listeleme
-    - Uygun zaman aralığı oluşturma
-    - Uygun zamanları listeleme
-    - Randevu oluşturma
-    - Günlük randevuları listeleme
-    - Randevuyu güncelleme
-    - Randevuyu iptal etme
-    - Takvim yoğunluğu görüntüleme
-    - AI ile kalori hesaplama ve kaydetme
   contact:
     name: Beyza Uysal
     email: uysalbeyza27@gmail.com
-  license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
 
 servers:
   - url: https://api.vercel.com
