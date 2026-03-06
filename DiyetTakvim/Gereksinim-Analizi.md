@@ -63,11 +63,7 @@
     - **Açıklama:** Diyetisyen, ay içindeki günlerin doluluk durumunu görüntüler.
           
    
-14. **Beslenme Kaydı Ekleme**
-    - **API Metodu:** 'POST /nutrition'
-    - **Açıklama:** Danışan, günlük veya haftalık beslenme bilgisi ekler.
+14. **AI ile Kalori Hesaplama ve Kaydetme**
+    - **API Metodu:** 'POST /calorie-records'
+    - **Açıklama:** Danışan yemek fotoğrafını ve içeriğini gönderir. Sistem yapay zeka ile kaloriyi hesaplayıp kaydeder. Diyetisyen danışanın toplam kalorisini görüntüler.
 
-               
-15. **Aylık Randevu Tahmini Oluşturma**
-    - **API Metodu:** 'POST /appointments/prediction'
-    - **Açıklama:** Sistem, geçmiş randevu bilgileri ve hava durumu verilerini kullanarak gelecek ay için tahmini toplam randevu sayısını hesaplar ve sonucu diyetisyen panelinde gösterir.
