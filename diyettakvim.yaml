@@ -1,0 +1,941 @@
+openapi: 3.0.3
+info:
+  title: DiyetTakvim API'si
+  version: 1.0.0
+  description: >
+    Bu API, diyetisyen ve danışan kullanıcılarının kayıt, giriş, bağlantı kurma,
+    uygunluk oluşturma, randevu yönetimi ve yapay zeka destekli kalori takibi
+    işlemlerini gerçekleştirmek için tasarlanmış bir RESTful servistir.
+    Sistem, rol bazlı kullanıcı yapısını destekler ve JWT tabanlı kimlik doğrulama ile korunmaktadır.
+  contact:
+    name: Beyza Uysal
+    email: uysalbeyza27@gmail.com
+
+servers:
+  - url: https://api.vercel.com
+    description: Üretim sunucusu (Production)
+  - url: https://staging-api.vercel.com
+    description: Test sunucusu (Staging)
+  - url: https://localhost:3000
+    description: Yerel geliştirme sunucusu (Development)
+
+tags:
+  - name: Kimlik Doğrulama
+    description: Kayıt olma ve giriş işlemleri
+  - name: Diyetisyenler
+    description: Diyetisyen profili ve danışan yönetimi işlemleri
+  - name: Bağlantılar
+    description: Davet kodu üretme ve danışan-diyetisyen bağlantı işlemleri
+  - name: Uygunluk
+    description: Uygun zaman aralığı oluşturma ve listeleme işlemleri
+  - name: Randevular
+    description: Randevu oluşturma, listeleme, güncelleme ve iptal işlemleri
+  - name: Kalori Kayıtları
+    description: Yapay zeka ile kalori hesaplama ve kayıt işlemleri
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Kimlik Doğrulama
+      summary: Rol Seçerek Kayıt Ol
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterInput'
+      responses:
+        "201":
+          description: Kullanıcı başarıyla oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "400":
+          description: Geçersiz istek verisi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Kimlik Doğrulama
+      summary: Giriş Yap
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        "200":
+          description: Giriş başarılı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "400":
+          description: Geçersiz istek verisi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: E-posta veya şifre hatalı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/dietitians:
+    post:
+      tags:
+        - Diyetisyenler
+      summary: Diyetisyen Profili Oluştur
+      operationId: createDietitianProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DietitianInput'
+      responses:
+        "201":
+          description: Diyetisyen profili başarıyla oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dietitian'
+        "400":
+          description: Geçersiz istek verisi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/invite-code:
+    post:
+      tags:
+        - Bağlantılar
+      summary: Davet Kodu Üret
+      operationId: generateInviteCode
+      responses:
+        "201":
+          description: Davet kodu başarıyla oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteCodeResponse'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/connections:
+    post:
+      tags:
+        - Bağlantılar
+      summary: Davet Kodu ile Bağlantı Kur
+      operationId: createConnection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectionInput'
+      responses:
+        "201":
+          description: Bağlantı başarıyla oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+        "400":
+          description: Geçersiz davet kodu veya eksik veri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/dietitians/{id}/clients:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Diyetisyenin benzersiz kimlik numarası
+        schema:
+          type: string
+        example: "dyt123"
+
+    get:
+      tags:
+        - Diyetisyenler
+      summary: Danışanları Listele
+      operationId: listDietitianClients
+      responses:
+        "200":
+          description: Danışanlar başarıyla listelendi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Client'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Diyetisyen bulunamadı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/availability:
+    post:
+      tags:
+        - Uygunluk
+      summary: Uygun Zaman Aralığı Oluştur
+      operationId: createAvailability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilityInput'
+      responses:
+        "201":
+          description: Uygun zaman aralığı başarıyla oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Availability'
+        "400":
+          description: Geçersiz istek verisi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Bu işlem için yetkiniz bulunmuyor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Uygunluk
+      summary: Uygun Zamanları Listele
+      operationId: listAvailability
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: Uygunlukların listeleneceği tarih
+          schema:
+            type: string
+            format: date
+          example: "2026-03-10"
+      responses:
+        "200":
+          description: Uygun zamanlar başarıyla listelendi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Availability'
+        "400":
+          description: Geçersiz tarih bilgisi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/appointments:
+    post:
+      tags:
+        - Randevular
+      summary: Randevu Oluştur
+      operationId: createAppointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentInput'
+      responses:
+        "201":
+          description: Randevu başarıyla oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        "400":
+          description: Geçersiz istek verisi veya seçilen saat uygun değil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/appointments/daily:
+    get:
+      tags:
+        - Randevular
+      summary: Günlük Randevuları Listele
+      operationId: listDailyAppointments
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: Randevuların listeleneceği gün
+          schema:
+            type: string
+            format: date
+          example: "2026-03-10"
+      responses:
+        "200":
+          description: Günlük randevular başarıyla listelendi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Appointment'
+        "400":
+          description: Geçersiz tarih bilgisi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/appointments/monthly:
+    get:
+      tags:
+        - Randevular
+      summary: Takvim Yoğunluğu Görüntüle
+      operationId: getMonthlyAppointmentDensity
+      parameters:
+        - name: month
+          in: query
+          required: true
+          description: Yoğunluğu görüntülenecek ay bilgisi
+          schema:
+            type: string
+            example: "2026-03"
+      responses:
+        "200":
+          description: Aylık takvim yoğunluğu başarıyla getirildi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonthlyAppointmentStatus'
+        "400":
+          description: Geçersiz ay bilgisi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/appointments/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Randevunun benzersiz kimlik numarası
+        schema:
+          type: string
+        example: "app456"
+
+    put:
+      tags:
+        - Randevular
+      summary: Randevuyu Güncelle
+      operationId: updateAppointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentUpdateInput'
+      responses:
+        "200":
+          description: Randevu başarıyla güncellendi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        "400":
+          description: Geçersiz istek verisi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Randevu bulunamadı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Randevular
+      summary: Randevuyu İptal Et
+      operationId: cancelAppointment
+      responses:
+        "204":
+          description: Randevu başarıyla iptal edildi
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Randevu bulunamadı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/calorie-records:
+    post:
+      tags:
+        - Kalori Kayıtları
+      summary: AI ile Kalori Hesaplama ve Kaydetme
+      operationId: createCalorieRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalorieRecordInput'
+      responses:
+        "201":
+          description: Kalori kaydı başarıyla oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalorieRecord'
+        "400":
+          description: Geçersiz istek verisi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Kimlik doğrulama başarısız (token eksik veya geçersiz)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'JWT tabanlı kimlik doğrulama. İstek başlığına "Authorization: Bearer <token>" eklenmelidir.'
+
+  schemas:
+    RegisterInput:
+      type: object
+      description: Kullanıcı kayıt isteği için gönderilecek veri
+      properties:
+        name:
+          type: string
+          description: Kullanıcının adı
+          example: "Beyza Uysal"
+        email:
+          type: string
+          format: email
+          description: Kullanıcının e-posta adresi
+          example: "beyza@example.com"
+        password:
+          type: string
+          format: password
+          description: Kullanıcının şifresi
+          example: "123456"
+        role:
+          type: string
+          description: Kullanıcının sistemdeki rolü
+          enum: [client, dietitian]
+          example: "client"
+      required:
+        - name
+        - email
+        - password
+        - role
+
+    LoginInput:
+      type: object
+      description: Kullanıcı giriş isteği için gönderilecek veri
+      properties:
+        email:
+          type: string
+          format: email
+          description: Kullanıcının e-posta adresi
+          example: "beyza@example.com"
+        password:
+          type: string
+          format: password
+          description: Kullanıcının şifresi
+          example: "123456"
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      description: Başarılı giriş veya kayıt sonrası döndürülen yanıt
+      properties:
+        token:
+          type: string
+          description: JWT erişim anahtarı
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+        - token
+        - user
+
+    User:
+      type: object
+      description: Kullanıcı bilgilerini temsil eden model
+      properties:
+        _id:
+          type: string
+          description: Kullanıcının benzersiz kimlik numarası
+          example: "usr123"
+        name:
+          type: string
+          description: Kullanıcının adı
+          example: "Beyza Uysal"
+        email:
+          type: string
+          format: email
+          description: Kullanıcının e-posta adresi
+          example: "beyza@example.com"
+        role:
+          type: string
+          description: Kullanıcının rolü
+          enum: [client, dietitian]
+          example: "dietitian"
+      required:
+        - _id
+        - name
+        - email
+        - role
+
+    DietitianInput:
+      type: object
+      description: Diyetisyen profili oluşturma isteği için gönderilecek veri
+      properties:
+        name:
+          type: string
+          description: Diyetisyenin adı
+          example: "Dyt. Ayşe Kaya"
+        specialization:
+          type: string
+          description: Diyetisyenin uzmanlık alanı
+          example: "Kilo Yönetimi"
+        city:
+          type: string
+          description: Diyetisyenin bulunduğu şehir
+          example: "Isparta"
+      required:
+        - name
+        - specialization
+        - city
+
+    Dietitian:
+      type: object
+      description: Diyetisyen profilini temsil eden model
+      properties:
+        _id:
+          type: string
+          description: Diyetisyenin benzersiz kimlik numarası
+          example: "dyt123"
+        name:
+          type: string
+          description: Diyetisyenin adı
+          example: "Dyt. Ayşe Kaya"
+        specialization:
+          type: string
+          description: Uzmanlık alanı
+          example: "Kilo Yönetimi"
+        city:
+          type: string
+          description: Şehir bilgisi
+          example: "Isparta"
+      required:
+        - _id
+        - name
+        - specialization
+        - city
+
+    InviteCodeResponse:
+      type: object
+      description: Davet kodu oluşturma işlemi sonrası döndürülen yanıt
+      properties:
+        code:
+          type: string
+          description: Diyetisyene ait davet kodu
+          example: "INV-AB12CD"
+      required:
+        - code
+
+    ConnectionInput:
+      type: object
+      description: Danışanın davet kodu ile bağlantı kurması için gönderilecek veri
+      properties:
+        inviteCode:
+          type: string
+          description: Diyetisyen tarafından oluşturulan davet kodu
+          example: "INV-AB12CD"
+      required:
+        - inviteCode
+
+    Connection:
+      type: object
+      description: Danışan ve diyetisyen arasındaki bağlantıyı temsil eden model
+      properties:
+        _id:
+          type: string
+          description: Bağlantının benzersiz kimlik numarası
+          example: "con123"
+        clientId:
+          type: string
+          description: Danışanın kimlik numarası
+          example: "clt123"
+        dietitianId:
+          type: string
+          description: Diyetisyenin kimlik numarası
+          example: "dyt123"
+        inviteCode:
+          type: string
+          description: Kullanılan davet kodu
+          example: "INV-AB12CD"
+      required:
+        - _id
+        - clientId
+        - dietitianId
+        - inviteCode
+
+    Client:
+      type: object
+      description: Danışan bilgilerini temsil eden model
+      properties:
+        _id:
+          type: string
+          description: Danışanın benzersiz kimlik numarası
+          example: "clt123"
+        name:
+          type: string
+          description: Danışanın adı
+          example: "Elif Demir"
+        email:
+          type: string
+          format: email
+          description: Danışanın e-posta adresi
+          example: "elif@example.com"
+      required:
+        - _id
+        - name
+        - email
+
+    AvailabilityInput:
+      type: object
+      description: Uygun zaman aralığı oluşturma isteği için gönderilecek veri
+      properties:
+        date:
+          type: string
+          format: date
+          description: Uygunluk tarihi
+          example: "2026-03-10"
+        startTime:
+          type: string
+          description: Başlangıç saati
+          example: "10:00"
+        endTime:
+          type: string
+          description: Bitiş saati
+          example: "12:00"
+      required:
+        - date
+        - startTime
+        - endTime
+
+    Availability:
+      type: object
+      description: Uygun zaman aralığını temsil eden model
+      properties:
+        _id:
+          type: string
+          description: Uygunluk kaydının benzersiz kimlik numarası
+          example: "avl123"
+        date:
+          type: string
+          format: date
+          description: Uygunluk tarihi
+          example: "2026-03-10"
+        startTime:
+          type: string
+          description: Başlangıç saati
+          example: "10:00"
+        endTime:
+          type: string
+          description: Bitiş saati
+          example: "12:00"
+      required:
+        - _id
+        - date
+        - startTime
+        - endTime
+
+    AppointmentInput:
+      type: object
+      description: Randevu oluşturma isteği için gönderilecek veri
+      properties:
+        dietitianId:
+          type: string
+          description: Randevu alınacak diyetisyenin kimlik numarası
+          example: "dyt123"
+        date:
+          type: string
+          format: date
+          description: Randevu tarihi
+          example: "2026-03-10"
+        time:
+          type: string
+          description: Randevu saati
+          example: "10:30"
+      required:
+        - dietitianId
+        - date
+        - time
+
+    AppointmentUpdateInput:
+      type: object
+      description: Randevu güncelleme isteği için gönderilecek veri
+      properties:
+        date:
+          type: string
+          format: date
+          description: Yeni randevu tarihi
+          example: "2026-03-11"
+        time:
+          type: string
+          description: Yeni randevu saati
+          example: "11:00"
+      required:
+        - date
+        - time
+
+    Appointment:
+      type: object
+      description: Randevu bilgilerini temsil eden model
+      properties:
+        _id:
+          type: string
+          description: Randevunun benzersiz kimlik numarası
+          example: "app456"
+        clientId:
+          type: string
+          description: Danışanın kimlik numarası
+          example: "clt123"
+        dietitianId:
+          type: string
+          description: Diyetisyenin kimlik numarası
+          example: "dyt123"
+        date:
+          type: string
+          format: date
+          description: Randevu tarihi
+          example: "2026-03-10"
+        time:
+          type: string
+          description: Randevu saati
+          example: "10:30"
+        status:
+          type: string
+          description: Randevu durumu
+          enum: [scheduled, cancelled, completed]
+          example: "scheduled"
+      required:
+        - _id
+        - clientId
+        - dietitianId
+        - date
+        - time
+        - status
+
+    MonthlyAppointmentStatus:
+      type: object
+      description: Aylık takvim yoğunluğunu temsil eden model
+      properties:
+        date:
+          type: string
+          format: date
+          description: Gün bilgisi
+          example: "2026-03-10"
+        appointmentCount:
+          type: integer
+          description: O güne ait randevu sayısı
+          example: 4
+        isFull:
+          type: boolean
+          description: Günün dolu olup olmadığı bilgisi
+          example: false
+      required:
+        - date
+        - appointmentCount
+        - isFull
+
+    CalorieRecordInput:
+      type: object
+      description: Kalori kaydı oluşturma isteği için gönderilecek veri
+      properties:
+        imageUrl:
+          type: string
+          description: Yemek fotoğrafının bağlantısı
+          example: "https://example.com/yemek.jpg"
+        description:
+          type: string
+          description: Yemek içeriği açıklaması
+          example: "1 tabak makarna, 1 kase yoğurt"
+      required:
+        - imageUrl
+        - description
+
+    CalorieRecord:
+      type: object
+      description: Kalori kaydını temsil eden model
+      properties:
+        _id:
+          type: string
+          description: Kalori kaydının benzersiz kimlik numarası
+          example: "cal123"
+        clientId:
+          type: string
+          description: Danışanın kimlik numarası
+          example: "clt123"
+        imageUrl:
+          type: string
+          description: Yemek fotoğrafı bağlantısı
+          example: "https://example.com/yemek.jpg"
+        description:
+          type: string
+          description: Yemek açıklaması
+          example: "1 tabak makarna, 1 kase yoğurt"
+        estimatedCalories:
+          type: integer
+          description: Yapay zeka tarafından tahmin edilen kalori miktarı
+          example: 540
+        createdAt:
+          type: string
+          format: date-time
+          description: Kaydın oluşturulma tarihi
+          example: "2026-03-06T12:00:00Z"
+      required:
+        - _id
+        - clientId
+        - imageUrl
+        - description
+        - estimatedCalories
+        - createdAt
+
+    Error:
+      type: object
+      description: Hata durumlarında döndürülen standart hata yanıtı
+      properties:
+        message:
+          type: string
+          description: Hatayı açıklayan mesaj
+          example: "Geçersiz istek verisi"
+      required:
+        - message
