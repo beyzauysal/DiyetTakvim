@@ -23,12 +23,13 @@ info:
   contact:
     name: Beyza Uysal
     email: uysalbeyza27@gmail.com
+license:
+  name: MIT
+  url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://api.vercel.com
-    description: Üretim sunucusu (Production)
-  - url: https://staging-api.vercel.com
-    description: Test sunucusu (Staging)
+  - url: https://api.diyettakvim.com/v1
+    description: Üretim sunucusu (Production) 
   - url: https://localhost:3000
     description: Yerel geliştirme sunucusu (Development)
 
