@@ -28,10 +28,13 @@ license:
   url: https://opensource.org/licenses/MIT
 
 servers:
+  servers:
   - url: https://api.diyettakvim.com/v1
-    description: Üretim sunucusu (Production) 
+    description: Production server
+  - url: https://staging-api.diyettakvim.com/v1
+    description: Staging server
   - url: http://localhost:3000/v1
-    description: Yerel geliştirme sunucusu (Development)
+    description: Development server
 
 tags:
   - name: Kimlik Doğrulama
