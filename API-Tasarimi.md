@@ -30,7 +30,7 @@ license:
 servers:
   - url: https://api.diyettakvim.com/v1
     description: Üretim sunucusu (Production) 
-  - url: https://localhost:3000
+  - url: https://localhost:3000/v1
     description: Yerel geliştirme sunucusu (Development)
 
 tags:
