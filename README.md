@@ -72,4 +72,4 @@ Web Uygulaması
 ## **Dokümantasyon**
 **1.** [Gereksinim Analizi](DiyetTakvim/Gereksinim-Analizi.md)
 
-**2.** [API Tasarımı](API-Tasarimi.md)
+**2.** [Rest API Tasarımı](API-Tasarimi.md)
