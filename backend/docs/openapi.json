@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "DiyetTakvim API",
-    "description": "Diyetisyen–danışan randevu ve beslenme API’si. Aynı route’lar hem `/api/...` hem kökten (`/auth`, `/appointments`, …) erişilebilir.",
+    "description": "Diyetisyen–danışan randevu ve beslenme API’si. Aynı route’lar hem `/api/...` hem kökten (`/auth`, `/appointments`, …) erişilebilir. İnteraktif dokümantasyon: `/api-docs`, ham spec: `/openapi.json`.",
     "version": "1.0.0"
   },
   "servers": [
@@ -329,6 +329,7 @@
       "post": {
         "tags": ["Kalori"],
         "summary": "AI kalori önizleme (kaydetmez)",
+        "description": "Fotoğraf yüklenirse geçici olarak `/uploads/...` URL’si dönebilir; kalıcı saklama yok—`POST /calorie-records/save` sonrası bu yerel dosya silinir ve kayıtta `imageUrl` boş kalır.",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "content": {
@@ -362,6 +363,7 @@
       "post": {
         "tags": ["Kalori"],
         "summary": "Öğün kaydı kaydet (preview sonrası)",
+        "description": "Yanıttaki kayıtta `imageUrl` genelde boştur: önizlemedeki yerel `/uploads/...` dosyası kayıt başarılı olunca sunucudan silinir. Harici (tam URL) bir `imageUrl` gönderirsen saklanır.",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "content": {
@@ -373,7 +375,7 @@
                   "date": { "type": "string" },
                   "mealType": { "type": "string" },
                   "note": { "type": "string" },
-                  "imageUrl": { "type": "string" },
+                  "imageUrl": { "type": "string", "description": "Preview’dan gelen yerel uploads URL’si veya harici link" },
                   "foods": { "type": "array", "items": { "type": "string" } },
                   "totalCalories": { "type": "number" }
                 }
