@@ -1,0 +1,426 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DiyetTakvim API",
+    "description": "Diyetisyen–danışan randevu ve beslenme API’si. Aynı route’lar hem `/api/...` hem kökten (`/auth`, `/appointments`, …) erişilebilir.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5050",
+      "description": "Lokal geliştirme"
+    }
+  ],
+  "tags": [
+    { "name": "Sistem", "description": "Sağlık kontrolü" },
+    { "name": "Kimlik", "description": "Kayıt, giriş, profil" },
+    { "name": "Diyetisyen", "description": "Profil, davet kodu, danışan listesi" },
+    { "name": "Randevu", "description": "Müsaitlik ve randevular" },
+    { "name": "Kalori", "description": "AI önizleme ve kayıt" },
+    { "name": "Su", "description": "Su tüketimi" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Login yanıtındaki access token. Refresh token httpOnly cookie ile gelir."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/water-intake/health": {
+      "get": {
+        "tags": ["Sistem"],
+        "summary": "API sağlık",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "service": { "type": "string", "example": "diyettakvim-api" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Kimlik"],
+        "summary": "Kayıt (diyetisyen veya danışan)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "password", "role"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" },
+                  "role": { "type": "string", "enum": ["dietitian", "client"] },
+                  "inviteCode": { "type": "string", "description": "Danışan için zorunlu" },
+                  "specialty": { "type": "string" },
+                  "city": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Oluşturuldu" },
+          "400": { "description": "Geçersiz istek", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "tags": ["Kimlik"],
+        "summary": "E-posta doğrulama",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "code"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "code": { "type": "string", "pattern": "^\\d{6}$" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Doğrulandı" } }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Kimlik"],
+        "summary": "Giriş",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "role"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "role": { "type": "string", "enum": ["dietitian", "client"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "token + user + refresh cookie" } }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Kimlik"],
+        "summary": "Oturumdaki kullanıcı",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "user nesnesi" }, "401": { "description": "Yetkisiz" } }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Kimlik"],
+        "summary": "Access token yenile (refresh cookie)",
+        "responses": { "200": { "description": "Yeni token" } }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Kimlik"],
+        "summary": "Çıkış",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/auth/availability": {
+      "post": {
+        "tags": ["Diyetisyen"],
+        "summary": "Çalışma saatleri / müsaitlik (diyetisyen)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workingDays": { "type": "array", "items": { "type": "string" }, "example": ["Monday", "Tuesday"] },
+                  "workStart": { "type": "string", "example": "09:00" },
+                  "workEnd": { "type": "string", "example": "17:00" },
+                  "breakStart": { "type": "string" },
+                  "breakEnd": { "type": "string" },
+                  "slotDuration": { "type": "integer", "example": 30 }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Güncellendi" } }
+      }
+    },
+    "/invite-code": {
+      "post": {
+        "tags": ["Diyetisyen"],
+        "summary": "Yeni davet kodu üret",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "inviteCode" } }
+      }
+    },
+    "/dietitians": {
+      "post": {
+        "tags": ["Diyetisyen"],
+        "summary": "Diyetisyen profil kaydet",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "specialty": { "type": "string" },
+                  "city": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/dietitians/{id}/clients": {
+      "get": {
+        "tags": ["Diyetisyen"],
+        "summary": "Bağlı danışanlar (yalnızca id = token’daki diyetisyen id)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Diyetisyen kullanıcı _id (URL’de < > kullanma)"
+          }
+        ],
+        "responses": { "200": { "description": "clients listesi" }, "403": { "description": "Başka diyetisyenin listesi" } }
+      }
+    },
+    "/appointments": {
+      "post": {
+        "tags": ["Randevu"],
+        "summary": "Randevu oluştur (danışan)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["dietitianId", "appointmentDate"],
+                "properties": {
+                  "dietitianId": { "type": "string" },
+                  "appointmentDate": { "type": "string", "format": "date-time" },
+                  "note": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Oluşturuldu" } }
+      }
+    },
+    "/appointments/available-slots": {
+      "get": {
+        "tags": ["Randevu"],
+        "summary": "Uygun saatler (danışan, bağlı diyetisyen için)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "date", "in": "query", "required": true, "schema": { "type": "string", "example": "2026-04-02" } }],
+        "responses": { "200": { "description": "availableSlots" } }
+      }
+    },
+    "/appointments/my-appointments": {
+      "get": {
+        "tags": ["Randevu"],
+        "summary": "Danışan randevularım",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/appointments/dietitian-appointments": {
+      "get": {
+        "tags": ["Randevu"],
+        "summary": "Diyetisyen tüm randevular",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/appointments/daily": {
+      "get": {
+        "tags": ["Randevu"],
+        "summary": "Günlük randevular (diyetisyen)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "date", "in": "query", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/appointments/monthly": {
+      "get": {
+        "tags": ["Randevu"],
+        "summary": "Aylık özet (diyetisyen)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "year", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "month", "in": "query", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "summary" } }
+      }
+    },
+    "/appointments/{id}": {
+      "put": {
+        "tags": ["Randevu"],
+        "summary": "Randevu güncelle",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "appointmentDate": { "type": "string", "format": "date-time" },
+                  "note": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": {
+        "tags": ["Randevu"],
+        "summary": "Randevu iptal",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "İptal" } }
+      }
+    },
+    "/calorie-records/preview": {
+      "post": {
+        "tags": ["Kalori"],
+        "summary": "AI kalori önizleme (kaydetmez)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["mealType"],
+                "properties": {
+                  "mealType": { "type": "string", "example": "ogle" },
+                  "note": { "type": "string" },
+                  "imageUrl": { "type": "string" }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mealType": { "type": "string" },
+                  "note": { "type": "string" },
+                  "photo": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "foods, totalCalories" } }
+      }
+    },
+    "/calorie-records/save": {
+      "post": {
+        "tags": ["Kalori"],
+        "summary": "Öğün kaydı kaydet (preview sonrası)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["date", "mealType", "foods", "totalCalories"],
+                "properties": {
+                  "date": { "type": "string" },
+                  "mealType": { "type": "string" },
+                  "note": { "type": "string" },
+                  "imageUrl": { "type": "string" },
+                  "foods": { "type": "array", "items": { "type": "string" } },
+                  "totalCalories": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Kayıt oluşturuldu" } }
+      }
+    },
+    "/calorie-records/my-records": {
+      "get": {
+        "tags": ["Kalori"],
+        "summary": "Danışan öğün kayıtlarım",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "records" } }
+      }
+    },
+    "/water-intake": {
+      "post": {
+        "tags": ["Su"],
+        "summary": "Su ekle (danışan)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amountMl": { "type": "number", "example": 250 },
+                  "date": { "type": "string", "example": "2026-04-02" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "OK" } }
+      }
+    },
+    "/water-intake/daily": {
+      "get": {
+        "tags": ["Su"],
+        "summary": "Günlük su özeti",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "date", "in": "query", "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}

@@ -21,6 +21,8 @@ const waterIntakeRoutes = require("./routes/waterIntakeRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
 const authMiddleware = require("./middleware/authMiddleware");
 const roleMiddleware = require("./middleware/roleMiddleware");
+const swaggerUi = require("swagger-ui-express");
+const openapiDocument = require("./docs/openapi.json");
 
 const app = express();
 
@@ -69,6 +71,19 @@ app.use("/uploads", express.static(uploadsDir));
 app.get("/api/water-intake/health", (_req, res) => {
   res.status(200).json({ ok: true, service: "diyettakvim-api" });
 });
+
+app.get("/openapi.json", (_req, res) => {
+  res.json(openapiDocument);
+});
+
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(openapiDocument, {
+    customSiteTitle: "DiyetTakvim API",
+    customCss: ".swagger-ui .topbar { display: none }",
+  })
+);
 
 /* Su ekleme: üst seviye kayıt — bazı ortamlarda yalnızca router mount 404 verebiliyor */
 if (typeof waterIntakeRoutes.handleAddWater === "function") {
