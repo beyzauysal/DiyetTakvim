@@ -54,6 +54,34 @@ function publicUploadUrl(filename) {
   return `${base.replace(/\/$/, "")}/uploads/${filename}`;
 }
 
+/** Önizlemede üretilen /uploads/... URL → disk yolu (path traversal yok). */
+function localUploadAbsolutePathFromUrl(urlStr) {
+  if (!urlStr || typeof urlStr !== "string") return null;
+  let pathname = "";
+  try {
+    pathname = new URL(urlStr).pathname;
+  } catch {
+    pathname = urlStr;
+  }
+  const m = pathname.match(/\/uploads\/([^/?#]+)$/);
+  if (!m) return null;
+  const name = path.basename(m[1]);
+  if (!name || name !== m[1] || name.includes("..")) return null;
+  const abs = path.resolve(path.join(uploadDir, name));
+  const root = path.resolve(uploadDir);
+  if (!abs.startsWith(root + path.sep) && abs !== root) return null;
+  return abs;
+}
+
+function tryUnlinkQuiet(filePath) {
+  if (!filePath) return;
+  try {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch (err) {
+    console.error("Yerel öğün fotoğrafı silinemedi:", err.message || err);
+  }
+}
+
 async function previewCalorieAnalysis(req, res) {
   try {
     const { mealType, note } = req.body;
@@ -168,6 +196,9 @@ async function saveCalorieRecordFromPreview(req, res) {
 
     const noteStr = typeof note === "string" ? note : "";
     const imgStr = typeof imageUrl === "string" ? imageUrl.trim() : "";
+    const localPhotoPath = localUploadAbsolutePathFromUrl(imgStr);
+    // Yerel yüklenen öğün fotoğrafı kalıcı tutulmaz: kayıtta URL saklanmaz, dosya kayıttan sonra silinir.
+    const imageUrlToStore = localPhotoPath ? "" : imgStr;
 
     const newRecord = new CalorieRecord({
       client: clientUser._id,
@@ -176,11 +207,15 @@ async function saveCalorieRecordFromPreview(req, res) {
       mealType,
       foods: foods.map((f) => String(f)),
       note: noteStr || "",
-      imageUrl: imgStr,
+      imageUrl: imageUrlToStore,
       totalCalories: tc,
     });
 
     await newRecord.save();
+
+    if (localPhotoPath) {
+      tryUnlinkQuiet(localPhotoPath);
+    }
 
     res.status(201).json({
       message: "Öğün kaydı oluşturuldu.",
