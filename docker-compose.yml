@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: diyet_db
+    environment:
+      POSTGRES_USER: diyet
+      POSTGRES_PASSWORD: diyetpass
+      POSTGRES_DB: diyettakvim
+    ports:
+      - "5432:5432"
+    volumes:
+      - diyet_db_data:/var/lib/postgresql/data
+
+volumes:
+  diyet_db_data:
+  

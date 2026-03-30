@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 800" width="640" height="800" role="img" aria-labelledby="homeHeroTitle homeHeroDesc">
+  <title id="homeHeroTitle">DiyetTakvim — randevu ve beslenme</title>
+  <desc id="homeHeroDesc">
+    Krem ve adaçay? ye?ili tonlar?nda, telefon çerçevesi içinde sade takvim ve su simgesi içeren uygulama illüstrasyonu.
+  </desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#faf7f2"/>
+      <stop offset="50%" stop-color="#eef4ef"/>
+      <stop offset="100%" stop-color="#e2ebe4"/>
+    </linearGradient>
+    <linearGradient id="sage" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a7a62"/>
+      <stop offset="100%" stop-color="#3d5c45"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#6eb3a8"/>
+      <stop offset="100%" stop-color="#4a8f82"/>
+    </linearGradient>
+    <filter id="sh" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#2d4536" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+
+  <rect width="640" height="800" fill="url(#bg)"/>
+
+  <circle cx="560" cy="120" r="100" fill="#c9d9cc" opacity="0.4"/>
+  <circle cx="90" cy="680" r="72" fill="#e8cfc0" opacity="0.35"/>
+
+  <!-- Telefon gövdesi -->
+  <g filter="url(#sh)">
+    <rect x="132" y="72" width="376" height="656" rx="36" fill="#ffffff" stroke="#3d5c45" stroke-width="2"/>
+    <rect x="152" y="96" width="336" height="52" rx="14" fill="url(#sage)"/>
+    <text x="320" y="130" text-anchor="middle" fill="#f7f4ef" font-family="system-ui, -apple-system, sans-serif" font-size="17" font-weight="800" letter-spacing="0.02em">DiyetTakvim</text>
+
+    <!-- Takvim kart? -->
+    <rect x="160" y="168" width="320" height="240" rx="20" fill="#f8faf8" stroke="#d4e0d8" stroke-width="1.5"/>
+    <rect x="160" y="168" width="320" height="40" rx="20" fill="url(#accent)" opacity="0.95"/>
+    <rect x="160" y="188" width="320" height="20" fill="url(#accent)" opacity="0.95"/>
+    <text x="320" y="196" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="13" font-weight="700">Randevu</text>
+
+    <g fill="none" stroke="#dce8e2" stroke-width="1.2">
+      <rect x="176" y="224" width="36" height="32" rx="6" fill="#fff"/>
+      <rect x="220" y="224" width="36" height="32" rx="6" fill="#fff"/>
+      <rect x="264" y="224" width="36" height="32" rx="6" fill="#e4f2ec"/>
+      <rect x="308" y="224" width="36" height="32" rx="6" fill="#fff"/>
+      <rect x="352" y="224" width="36" height="32" rx="6" fill="#fff"/>
+      <rect x="396" y="224" width="36" height="32" rx="6" fill="#fff"/>
+      <rect x="440" y="224" width="36" height="32" rx="6" fill="#fff"/>
+      <rect x="176" y="264" width="36" height="32" rx="6" fill="#d4ebe3"/>
+      <rect x="220" y="264" width="36" height="32" rx="6" fill="#fff"/>
+      <rect x="264" y="264" width="36" height="32" rx="6" fill="#fff"/>
+      <rect x="308" y="264" width="36" height="32" rx="6" fill="#f5ebe4"/>
+      <rect x="352" y="264" width="36" height="32" rx="6" fill="#fff"/>
+      <rect x="396" y="264" width="36" height="32" rx="6" fill="#fff"/>
+      <rect x="440" y="264" width="36" height="32" rx="6" fill="#fff"/>
+    </g>
+    <rect x="298" y="274" width="56" height="18" rx="9" fill="#3d5c45"/>
+    <text x="326" y="287" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="10" font-weight="700">10:30</text>
+
+    <!-- Özet sat?rlar? -->
+    <rect x="160" y="428" width="320" height="64" rx="16" fill="#ffffff" stroke="#e0ebe6" stroke-width="1"/>
+    <circle cx="192" cy="460" r="18" fill="#f0d9ce"/>
+    <path d="M192 448c-3 5-6 10-6 9 0-3 3-6 6-6s6 3 6 6c0 1-3-4-6-9z" fill="#3d5c45" opacity="0.25"/>
+    <rect x="222" y="444" width="140" height="10" rx="4" fill="#dce8e2"/>
+    <rect x="222" y="462" width="96" height="8" rx="4" fill="#eef4f0"/>
+
+    <rect x="160" y="504" width="320" height="56" rx="16" fill="#f4faf7" stroke="#d4e0d8" stroke-width="1"/>
+    <path d="M188 528c0-6 5-14 5-14s5 8 5 14c0 4-2 8-5 8s-5-4-5-8z" fill="#5a9d8f"/>
+    <rect x="210" y="520" width="120" height="8" rx="4" fill="#dce8e2"/>
+    <rect x="210" y="534" width="72" height="8" rx="4" fill="url(#accent)" opacity="0.7"/>
+
+    <rect x="160" y="572" width="320" height="44" rx="14" fill="#ffffff" stroke="#3d5c45" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.9"/>
+    <text x="320" y="600" text-anchor="middle" fill="#3d5c45" font-family="ui-monospace, monospace" font-size="11" font-weight="700" letter-spacing="0.08em">DAVET KODU</text>
+  </g>
+
+  <ellipse cx="320" cy="760" rx="220" ry="28" fill="#3d5c45" opacity="0.07"/>
+</svg>

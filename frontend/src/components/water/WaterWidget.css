@@ -1,0 +1,347 @@
+.water-widget {
+  flex-shrink: 0;
+  width: min(300px, 100%);
+  padding: 20px 20px 16px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    165deg,
+    #dbeafe 0%,
+    #93c5fd 42%,
+    #60a5fa 100%
+  );
+  border: 2px solid #2563eb;
+  box-shadow:
+    0 8px 28px rgba(37, 99, 235, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  text-align: center;
+  color: #0c2544;
+}
+
+/* Panel içi: başlık kartların altında, tam genişlik, yazı + bardak yan yana */
+.water-widget--panel {
+  width: 100%;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  padding: 22px 24px 20px;
+  text-align: left;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .water-widget--panel {
+    grid-template-columns: minmax(200px, 1fr) auto;
+    gap: 28px;
+    padding: 26px 32px 24px;
+  }
+}
+
+.water-widget--panel .water-widget-textblock {
+  min-width: 0;
+}
+
+.water-widget--panel .water-widget-kicker {
+  margin-bottom: 8px;
+}
+
+.water-widget--panel .water-widget-amount {
+  margin-bottom: 14px;
+}
+
+.water-widget--panel .water-widget-progress {
+  margin-bottom: 12px;
+}
+
+.water-widget--panel .water-widget-footer {
+  margin-top: 0;
+  margin-bottom: 0;
+  max-width: 40ch;
+}
+
+.water-widget--panel .water-widget-glass {
+  justify-self: center;
+  padding: 4px 12px 12px;
+}
+
+.water-widget--panel .water-widget-svg-wrap {
+  width: min(200px, 42vw);
+}
+
+@media (min-width: 768px) {
+  .water-widget--panel .water-widget-svg-wrap {
+    width: min(200px, 24vw);
+  }
+}
+
+.water-widget:not(.water-widget--panel) .water-widget-textblock {
+  display: contents;
+}
+
+.water-widget-kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #1e3a5f;
+  opacity: 0.9;
+}
+
+.water-widget-amount {
+  font-size: 1.5rem;
+  margin: 0 0 12px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.water-widget-amount strong {
+  color: #1e40af;
+}
+
+.water-widget-sep {
+  margin: 0 4px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.water-widget-goal {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.water-widget-progress {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+  margin-bottom: 14px;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+}
+
+.water-widget-progress-bar {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, #1d4ed8 0%, #38bdf8 50%, #7dd3fc 100%);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+  transition: width 0.35s ease;
+}
+
+.water-widget-glass {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 8px 8px 10px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  cursor: pointer;
+}
+
+.water-widget-glass:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.water-widget-svg-wrap {
+  width: min(140px, 48vw);
+  filter: drop-shadow(0 10px 22px rgba(29, 78, 216, 0.45));
+}
+
+.water-widget-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.water-widget-rim {
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 2px rgba(30, 64, 175, 0.6));
+}
+
+.water-widget-cta {
+  font-size: 14px;
+  font-weight: 900;
+  color: #1e3a8a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.water-widget-footer {
+  margin: 12px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e3a5f;
+  line-height: 1.4;
+}
+
+.water-widget-settings-link {
+  font-weight: 900;
+  color: #172554;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.water-widget-settings-link:hover {
+  color: #0f172a;
+}
+
+/* Dashboard ızgarasında: diğer özet kartlarıyla aynı boyut, tıkla → su ekle */
+.water-widget-card-wrap {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+}
+
+.dashboard-grid--client-metrics .water-widget-card-wrap {
+  padding: 0;
+}
+
+.water-widget-card-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.water-widget-card-copy {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 4px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.water-widget-card-copy h3 {
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.water-widget-mini-glass-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin: 4px 8px 4px 2px;
+  padding: 4px 6px 3px;
+  width: auto;
+  min-width: 56px;
+  font: inherit;
+  cursor: pointer;
+  background: linear-gradient(
+    155deg,
+    #dbeafe 0%,
+    #93c5fd 50%,
+    #60a5fa 100%
+  ) !important;
+  border: 2px solid #2563eb !important;
+  border-radius: 18px !important;
+  box-shadow:
+    0 6px 18px rgba(37, 99, 235, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+  filter: none !important;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.water-widget-mini-glass-btn:hover:not(:disabled) {
+  transform: scale(1.06) translateY(-1px) !important;
+  box-shadow:
+    0 10px 24px rgba(37, 99, 235, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+}
+
+.water-widget-mini-glass-btn:active:not(:disabled) {
+  transform: scale(1.02) !important;
+}
+
+.water-widget-mini-glass-btn:disabled {
+  opacity: 0.78;
+  cursor: wait;
+  transform: none !important;
+}
+
+.water-widget-mini-svg {
+  width: 30px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 4px 10px rgba(29, 78, 216, 0.35));
+}
+
+.water-widget-mini-rim {
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 2.5;
+}
+
+.water-widget-mini-glass-label {
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 900;
+  color: #1e3a8a;
+  letter-spacing: 0.02em;
+}
+
+.water-widget-card-amount {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--green-dark, #115e59);
+  line-height: 1.15;
+}
+
+.water-widget-card-sep {
+  margin: 0 4px;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+  font-size: 1rem;
+}
+
+.water-widget-card-goal {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-soft, #475569);
+}
+
+.water-widget-progress--card {
+  height: 4px;
+  margin-bottom: 2px;
+  border-radius: var(--radius-pill, 999px);
+  background: rgba(17, 94, 89, 0.12);
+  overflow: hidden;
+  border: 1px solid rgba(17, 94, 89, 0.15);
+}
+
+.water-widget-progress--card .water-widget-progress-bar {
+  background: linear-gradient(
+    90deg,
+    var(--water-deep, #075985) 0%,
+    var(--water-bright, #38bdf8) 100%
+  );
+  box-shadow: none;
+}
+
+.water-widget-card-amount-note {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.water-widget-card-amount-note .water-widget-settings-link {
+  font-size: inherit;
+}

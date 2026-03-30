@@ -1,0 +1,8 @@
+/* Uygulama kökü — tam genişlik (dashboard ile uyumlu) */
+#root {
+  min-height: 100vh;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
