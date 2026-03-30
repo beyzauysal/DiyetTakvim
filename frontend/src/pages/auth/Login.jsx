@@ -94,7 +94,17 @@ function Login() {
         );
         return;
       }
-      alert(res?.data?.message || "Giriş yapılırken hata oluştu.");
+      const backendMsg = res?.data?.message || res?.data?.error;
+      const networkHint =
+        error.code === "ERR_NETWORK" || error.message === "Network Error"
+          ? "Sunucuya ulaşılamıyor. Backend’i (npm run dev, port 5050) çalıştırın; frontend’i de npm run dev ile açın."
+          : null;
+      alert(
+        backendMsg ||
+          networkHint ||
+          error.message ||
+          "Giriş yapılırken hata oluştu."
+      );
     } finally {
       setSubmitting(false);
     }

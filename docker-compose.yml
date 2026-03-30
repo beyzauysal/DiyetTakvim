@@ -1,18 +1,53 @@
 version: "3.9"
 
 services:
-  db:
-    image: postgres:16
-    container_name: diyet_db
-    environment:
-      POSTGRES_USER: diyet
-      POSTGRES_PASSWORD: diyetpass
-      POSTGRES_DB: diyettakvim
+  mongo:
+    image: mongo:7
+    container_name: diyettakvim_mongo
+    restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - diyet_db_data:/var/lib/postgresql/data
+      - diyettakvim_mongo_data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+    container_name: diyettakvim_backend
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    environment:
+      NODE_ENV: production
+      PORT: 5050
+      MONGO_URI: mongodb://mongo:27017/diyettakvim
+      JWT_SECRET: change-me
+      JWT_REFRESH_SECRET: change-me-too
+      APP_NAME: DiyetTakvim
+      # Lokal docker'da frontend origin'i:
+      CORS_ORIGINS: http://localhost:5173,http://localhost:8080
+      # Upload linkleri üretimi için (lokal):
+      PUBLIC_API_URL: http://localhost:5050
+      # AI/Mail opsiyonel:
+      # OPENAI_API_KEY: ...
+      # SMTP_HOST: smtp.gmail.com
+      # SMTP_USER: ...
+      # SMTP_PASS: ...
+      # MAIL_FROM: "DiyetTakvim <noreply@example.com>"
+    ports:
+      - "5050:5050"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:5050
+    container_name: diyettakvim_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
 
 volumes:
-  diyet_db_data:
-  
+  diyettakvim_mongo_data:
