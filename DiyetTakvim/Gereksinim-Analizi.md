@@ -16,54 +16,49 @@
 4. **Davet Kodu Üretme**
    - **API Metodu:** 'POST /invite-code'
    - **Açıklama:** Sistem, diyetisyen için bir davet kodu oluşturur.
-
-
-5. **Davet Kodu Üretme**
-   - **API Metodu:** 'POST /connections'
-   - **Açıklama:** Sistem, diyetisyen için bir davet kodu oluşturur.
      
 
-6. **Danışanları Listeleme**
+5. **Danışanları Listeleme**
    - **API Metodu:** 'GET /dietitians/{id}/clients'
    - **Açıklama:** Diyetisyen, kendisine bağlı danışanların listesini görüntüler.
           
    
-7. **Uygun Zaman Aralığı Oluşturma**
+6. **Uygun Zaman Aralığı Oluşturma**
    - **API Metodu:** 'POST /availability'
    - **Açıklama:** Diyetisyen, randevu alınabilecek gün ve saat aralığı oluşturur.
           
   
-8. **Uygun Zamanları Listeleme**
+7. **Uygun Zamanları Listeleme**
    - **API Metodu:** 'GET /availability'
    - **Açıklama:** Danışan, seçilen tarihte uygun olan saatleri görüntüler.
 
 
-9. **Randevu Oluşturma**
+8. **Randevu Oluşturma**
    - **API Metodu:** 'POST /appointments'
    - **Açıklama:** Danışan, seçilen tarih ve saat için randevu oluşturur.
   
 
-10. **Günlük Randevuları Listeleme**
+9. **Günlük Randevuları Listeleme**
     - **API Metodu:** 'GET /appointments/daily'
     - **Açıklama:** Diyetisyen, seçilen güne ait randevuları listeler.
 
 
-11. **Randevuyu Güncelleme**
+10. **Randevuyu Güncelleme**
     - **API Metodu:** 'PUT /appointments/{id}'
     - **Açıklama:** Randevunun tarih veya saat bilgisi değiştirilir.
 
 
-12. **Randevuyu İptal Etme**
+11. **Randevuyu İptal Etme**
     - **API Metodu:** 'DELETE /appointments/{id}'
     - **Açıklama:** Randevu iptal edilir.
      
 
-13. **Takvim Yoğunluğu Görüntüleme**
+12. **Takvim Yoğunluğu Görüntüleme**
     - **API Metodu:** 'GET /appointments/monthly'
     - **Açıklama:** Diyetisyen, ay içindeki günlerin doluluk durumunu görüntüler.
           
    
-14. **AI ile Kalori Hesaplama ve Kaydetme**
+13. **AI ile Kalori Hesaplama ve Kaydetme**
     - **API Metodu:** 'POST /calorie-records'
     - **Açıklama:** Danışan yemek fotoğrafını ve içeriğini gönderir. Sistem yapay zeka ile kaloriyi hesaplayıp kaydeder. Diyetisyen danışanın toplam kalorisini görüntüler.
 
