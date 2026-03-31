@@ -27,35 +27,46 @@ const app = express();
 
 function getAllowedOrigins() {
   const env = process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "";
-  const parts = String(env)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
 
-  return parts.length ? parts : null;
+  return String(env)
+    .split(",")
+    .map((s) => s.trim().replace(/\/$/, ""))
+    .filter(Boolean);
 }
 
-const corsOptions =
-  process.env.NODE_ENV === "production"
-    ? {
-        origin: (origin, cb) => {
-          const allow = getAllowedOrigins();
+const allowedOrigins = getAllowedOrigins();
 
-          if (!allow) return cb(null, true);
-          if (!origin) return cb(null, true);
+const corsOptions = {
+  origin: (origin, cb) => {
+    const normalizedOrigin = origin ? origin.trim().replace(/\/$/, "") : origin;
 
-          if (allow.includes(origin)) return cb(null, true);
+    if (!normalizedOrigin) {
+      return cb(null, true);
+    }
 
-          return cb(new Error("CORS engellendi"));
-        },
-        credentials: true,
-      }
-    : {
-        origin: true,
-        credentials: true,
-      };
+    if (allowedOrigins.length === 0) {
+      return cb(null, true);
+    }
+
+    if (allowedOrigins.includes(normalizedOrigin)) {
+      return cb(null, true);
+    }
+
+    console.error("CORS engellendi:", {
+      origin: normalizedOrigin,
+      allowedOrigins,
+    });
+
+    return cb(new Error("CORS engellendi"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
 app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+
 app.use(express.json({ limit: "6mb" }));
 app.use(cookieParser());
 
@@ -87,11 +98,9 @@ async function ensureMongoConnected() {
     throw new Error("MONGO_URI tanımlı değil");
   }
 
-  mongoPromise = mongoose
-    .connect(process.env.MONGO_URI)
-    .finally(() => {
-      mongoPromise = null;
-    });
+  mongoPromise = mongoose.connect(process.env.MONGO_URI).finally(() => {
+    mongoPromise = null;
+  });
 
   return mongoPromise;
 }
