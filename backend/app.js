@@ -62,7 +62,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
 
 app.use(express.json({ limit: "6mb" }));
 app.use(cookieParser());
@@ -189,4 +188,4 @@ app.get("/", (_req, res) => {
   res.status(200).send("API çalışıyor");
 });
 
-module.exports = app;
+module.exports = { app, ensureMongoConnected, uploadsDir };

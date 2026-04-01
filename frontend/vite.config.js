@@ -7,7 +7,7 @@ export default defineConfig({
     host: true,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:5050",
+        target: "https://diyet-takvim-sl9r.vercel.app/",
         changeOrigin: true,
         timeout: 120_000,
         proxyTimeout: 120_000,
@@ -17,7 +17,7 @@ export default defineConfig({
   preview: {
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:5050",
+        target: "https://diyet-takvim-sl9r.vercel.app/",
         changeOrigin: true,
         timeout: 120_000,
         proxyTimeout: 120_000,
