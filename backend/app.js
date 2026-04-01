@@ -187,5 +187,4 @@ app.use("/testimonials", testimonialRoutes);
 app.get("/", (_req, res) => {
   res.status(200).send("API çalışıyor");
 });
-
-module.exports = app;
+module.exports = { app, ensureMongoConnected, uploadsDir };
