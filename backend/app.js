@@ -38,6 +38,13 @@ const corsOptions = {
     const allowedOrigins = getAllowedOrigins();
     const normalizedOrigin = origin ? origin.trim().replace(/\/$/, "") : "";
 
+    console.log("CORS kontrol:", {
+      origin,
+      normalizedOrigin,
+      envOrigins: process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "",
+      allowedOrigins,
+    });
+
     if (!normalizedOrigin) return cb(null, true);
     if (allowedOrigins.length === 0) return cb(null, true);
     if (allowedOrigins.includes(normalizedOrigin)) return cb(null, true);
@@ -55,13 +62,10 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+
 app.use(express.json({ limit: "6mb" }));
 app.use(cookieParser());
-
-// PRE-FLIGHT: bunu DB middleware'inden ÖNCE cevapla
-app.options("*", cors(corsOptions), (_req, res) => {
-  res.sendStatus(204);
-});
 
 const uploadsDir = process.env.VERCEL
   ? path.join("/tmp", "uploads")
@@ -104,7 +108,6 @@ async function ensureMongoConnected() {
   return mongoPromise;
 }
 
-// OPTIONS isteklerinde DB'ye gitme
 app.use(async (req, res, next) => {
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
