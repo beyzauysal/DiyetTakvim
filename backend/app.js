@@ -27,36 +27,20 @@ const app = express();
 
 function getAllowedOrigins() {
   const env = process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "";
-
   return String(env)
     .split(",")
     .map((s) => s.trim().replace(/\/$/, ""))
     .filter(Boolean);
 }
 
-const allowedOrigins = getAllowedOrigins();
-
 const corsOptions = {
   origin: (origin, cb) => {
-    const normalizedOrigin = origin ? origin.trim().replace(/\/$/, "") : origin;
-    console.log("CORS kontrol:", {
-      origin,
-      normalizedOrigin,
-      envOrigins: process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "",
-      allowedOrigins,
-    });
+    const allowedOrigins = getAllowedOrigins();
+    const normalizedOrigin = origin ? origin.trim().replace(/\/$/, "") : "";
 
-    if (!normalizedOrigin) {
-      return cb(null, true);
-    }
-
-    if (allowedOrigins.length === 0) {
-      return cb(null, true);
-    }
-
-    if (allowedOrigins.includes(normalizedOrigin)) {
-      return cb(null, true);
-    }
+    if (!normalizedOrigin) return cb(null, true);
+    if (allowedOrigins.length === 0) return cb(null, true);
+    if (allowedOrigins.includes(normalizedOrigin)) return cb(null, true);
 
     console.error("CORS engellendi:", {
       origin: normalizedOrigin,
@@ -71,10 +55,13 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
-
 app.use(express.json({ limit: "6mb" }));
 app.use(cookieParser());
+
+// PRE-FLIGHT: bunu DB middleware'inden ÖNCE cevapla
+app.options("*", cors(corsOptions), (_req, res) => {
+  res.sendStatus(204);
+});
 
 const uploadsDir = process.env.VERCEL
   ? path.join("/tmp", "uploads")
@@ -102,21 +89,27 @@ async function ensureMongoConnected() {
   if (!process.env.MONGO_URI) {
     throw new Error("MONGO_URI tanımlı değil");
   }
+
   mongoPromise = mongoose
-  .connect(process.env.MONGO_URI, {
-    serverSelectionTimeoutMS: 10000,
-    socketTimeoutMS: 45000,
-    family: 4,
-    maxPoolSize: 5,
-  })
-  .finally(() => {
-    mongoPromise = null;
-  });
+    .connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      family: 4,
+      maxPoolSize: 5,
+    })
+    .finally(() => {
+      mongoPromise = null;
+    });
 
   return mongoPromise;
 }
 
+// OPTIONS isteklerinde DB'ye gitme
 app.use(async (req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
   try {
     await ensureMongoConnected();
     next();
