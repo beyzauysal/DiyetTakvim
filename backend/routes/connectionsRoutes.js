@@ -2,9 +2,6 @@ const express = require("express");
 
 const router = express.Router();
 
-/**
- * POST /connections — Gereksinim dokümanında geçen bağlantı; uygulamada eşleşme kayıt + davet kodu ile yapılır.
- */
 router.post("/", (req, res) => {
   res.status(400).json({
     message:

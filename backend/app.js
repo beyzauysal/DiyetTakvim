@@ -76,7 +76,6 @@ app.options(/.*/, cors(corsOptions));
 app.use(express.json({ limit: "6mb" }));
 app.use(cookieParser());
 
-// Vercel'de disk kalıcı değildir; sadece geçici kullanım için /tmp
 const uploadsDir = process.env.VERCEL
   ? path.join("/tmp", "uploads")
   : path.join(__dirname, "uploads");
@@ -103,15 +102,20 @@ async function ensureMongoConnected() {
   if (!process.env.MONGO_URI) {
     throw new Error("MONGO_URI tanımlı değil");
   }
-
-  mongoPromise = mongoose.connect(process.env.MONGO_URI).finally(() => {
+  mongoPromise = mongoose
+  .connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    family: 4,
+    maxPoolSize: 5,
+  })
+  .finally(() => {
     mongoPromise = null;
   });
 
   return mongoPromise;
 }
 
-// Her istekte Mongo bağlantısını garanti altına al
 app.use(async (req, res, next) => {
   try {
     await ensureMongoConnected();
@@ -142,7 +146,6 @@ app.use(
   })
 );
 
-// Bazı ortamlarda direkt endpoint daha stabil çalışabiliyor
 if (typeof waterIntakeRoutes.handleAddWater === "function") {
   app.post(
     "/api/water-intake/add",

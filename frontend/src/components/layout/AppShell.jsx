@@ -193,7 +193,6 @@ function AppShell({
           (data.notifications || []).filter((n) => !n.isRead).length
         );
       } catch {
-        /* sessiz */
       }
     })();
     return () => ac.abort();

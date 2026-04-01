@@ -11,9 +11,6 @@ function generateInviteCode(name) {
   return `${cleanName}${randomPart}`;
 }
 
-/**
- * POST /invite-code — Gereksinim: diyetisyen için yeni davet kodu
- */
 router.post(
   "/",
   authMiddleware,
@@ -44,7 +41,6 @@ router.post(
           .map((c) => (typeof c === "string" ? c.trim().toUpperCase() : ""))
           .filter(Boolean)
       );
-      // Eski kodlar geçmiş olarak saklanır (kayıtta kullanılmaz); yeni kod zaten inviteCode alanında durur.
       if (prev) next.add(prev);
       user.inviteCodes = Array.from(next);
       await user.save();

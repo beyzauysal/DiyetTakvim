@@ -1,7 +1,3 @@
-/**
- * Türkiye cep numarası: 10 hane, 5 ile başlar (örn. 5321234567).
- * Girdi: 0532..., +90 532..., 90532..., 532... vb.
- */
 function normalizeTurkishMobile(raw) {
   const digits = String(raw ?? "").replace(/\D/g, "");
   if (!digits) return null;

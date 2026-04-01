@@ -1,11 +1,5 @@
 import axios from "axios";
 
-/**
- * Geliştirme: baseURL boş → istekler sayfa ile aynı origin (5173), Vite `/api` → 5050.
- * Doğrudan 127.0.0.1:5050 kullanmak localhost ile farklı origin sayılır; CORS/oturum yüzünden
- * sayfa beyaz kalabilir veya istekler takılabilir.
- * Canlı: VITE_API_URL veya varsayılan http://localhost:5050
- */
 const envUrl =
   typeof import.meta.env.VITE_API_URL === "string"
     ? import.meta.env.VITE_API_URL.trim()
@@ -13,14 +7,12 @@ const envUrl =
 const baseURL =
   envUrl || (import.meta.env.DEV ? "" : "http://localhost:5050");
 
-/** VITE_API_URL .../api ile biterse istek /api/auth/... → /api/api/auth/... olur; tek /api kalsın. */
 const baseEndsWithApi =
   Boolean(envUrl) && /\/api$/i.test(envUrl.replace(/\/+$/, ""));
 
 const apiClient = axios.create({
   baseURL,
   withCredentials: true,
-  /** Görüntülü kalori analizi vb. uzun sürebilir; 25 sn yetmeyebilir. */
   timeout: 120_000,
   headers: {
     "Content-Type": "application/json",
@@ -54,10 +46,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-/**
- * Access token 15 dakika: süre dolunca 401 döner.
- * Refresh token (httpOnly cookie) ile /api/auth/refresh çağırıp token'ı yenileyip isteği 1 kez tekrarlarız.
- */
 let refreshPromise = null;
 
 apiClient.interceptors.response.use(

@@ -6,7 +6,6 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
-/** JWT payload’daki userId string / ObjectId / { toString } karışık gelebilir; güvenli karşılaştır. */
 function mongoIdString(v) {
   if (v == null) return "";
   if (typeof v === "object" && v !== null) {
@@ -31,9 +30,6 @@ function sameMongoId(a, b) {
   }
 }
 
-/**
- * POST /dietitians — Gereksinim: diyetisyen ad, uzmanlık, şehir ile profil oluşturur/günceller
- */
 router.post(
   "/",
   authMiddleware,
@@ -83,9 +79,6 @@ router.post(
   }
 );
 
-/**
- * GET /dietitians/:id/clients — Gereksinim: ilgili diyetisyenin danışanları
- */
 router.get(
   "/:id/clients",
   authMiddleware,

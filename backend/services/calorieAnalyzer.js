@@ -27,10 +27,6 @@ function extractJsonObject(raw) {
   }
 }
 
-/**
- * Görüntülü öğün analizi: Chat Completions + JSON (Responses API / gpt-4.1-mini yerine,
- * hesaplarda daha tutarlı çalışır).
- */
 async function analyzeMealWithAI({ mealType, note, imageUrl }) {
   if (!process.env.OPENAI_API_KEY?.trim()) {
     throw new Error("OPENAI_API_KEY tanımlı değil (.env).");

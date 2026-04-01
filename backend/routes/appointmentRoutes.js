@@ -474,10 +474,8 @@ router.patch("/cancel/:id", authMiddleware, cancelAppointment);
 
 router.patch("/update/:id", authMiddleware, updateAppointment);
 
-/** Gereksinim: PUT /appointments/{id} */
 router.put("/:id", authMiddleware, updateAppointment);
 
-/** Gereksinim: DELETE /appointments/{id} */
 router.delete("/:id", authMiddleware, cancelAppointment);
 
 module.exports = router;

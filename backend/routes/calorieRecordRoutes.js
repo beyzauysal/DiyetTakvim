@@ -54,7 +54,6 @@ function publicUploadUrl(filename) {
   return `${base.replace(/\/$/, "")}/uploads/${filename}`;
 }
 
-/** Önizlemede üretilen /uploads/... URL → disk yolu (path traversal yok). */
 function localUploadAbsolutePathFromUrl(urlStr) {
   if (!urlStr || typeof urlStr !== "string") return null;
   let pathname = "";
@@ -197,7 +196,6 @@ async function saveCalorieRecordFromPreview(req, res) {
     const noteStr = typeof note === "string" ? note : "";
     const imgStr = typeof imageUrl === "string" ? imageUrl.trim() : "";
     const localPhotoPath = localUploadAbsolutePathFromUrl(imgStr);
-    // Yerel yüklenen öğün fotoğrafı kalıcı tutulmaz: kayıtta URL saklanmaz, dosya kayıttan sonra silinir.
     const imageUrlToStore = localPhotoPath ? "" : imgStr;
 
     const newRecord = new CalorieRecord({
@@ -250,7 +248,6 @@ router.get(
   }
 );
 
-/** AI ile kalori hesapla; veritabanına yazmaz (önce önizle, sonra kaydet). */
 router.post(
   "/preview",
   authMiddleware,
@@ -259,7 +256,6 @@ router.post(
   previewCalorieAnalysis
 );
 
-/** Önizleme sonrası kayıt (aynı foods / totalCalories / imageUrl ile). */
 router.post(
   "/save",
   authMiddleware,
@@ -267,7 +263,6 @@ router.post(
   saveCalorieRecordFromPreview
 );
 
-/** Eski tek adım akış — artık önizle + save kullanın. */
 router.post(
   "/analyze",
   authMiddleware,

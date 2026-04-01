@@ -6,7 +6,6 @@ export const MEAL_ORDER = {
   gece: 4,
 };
 
-/** Takvim günü anahtarı (yerel saat); öğünün `date` alanı öncelikli. */
 export function mealDateKey(record) {
   const raw = record?.date ?? record?.createdAt;
   if (!raw) return "";

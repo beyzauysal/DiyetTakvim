@@ -164,7 +164,6 @@ function DietitianDashboard() {
     };
   }, [currentYear, currentMonth, monthlySummary, todayKey]);
 
-  /** Aylık takvim: düz blok yerine alttan yukarı solan ısı haritası (yoğun = daha kızıl). */
   const getDayCellStyle = (count, isToday) => {
     let background = "var(--surface)";
     if (count > 0) {

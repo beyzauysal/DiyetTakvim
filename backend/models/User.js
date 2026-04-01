@@ -17,7 +17,6 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
     },
 
-    /** E-postalı yeni kayıtlar false; eski kayıtlarda alan yoksa girişte doğrulanmış sayılır. */
     emailVerified: {
       type: Boolean,
       default: true,
@@ -78,10 +77,6 @@ const userSchema = new mongoose.Schema(
       sparse: true,
     },
 
-    /**
-     * Diyetisyen davet kod geçmişi (pasif).
-     * Yeni kod üretildiğinde eskiler silinmez; ancak danışan kayıtlarında sadece `inviteCode` (güncel kod) geçerlidir.
-     */
     inviteCodes: {
       type: [String],
       default: [],
@@ -93,7 +88,6 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    /** Davet kodu ile kayıt; diyetisyen onayından sonra linkedDietitian dolar. */
     pendingDietitian: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

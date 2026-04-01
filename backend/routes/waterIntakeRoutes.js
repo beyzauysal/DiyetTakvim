@@ -59,15 +59,11 @@ async function handleAddWater(req, res) {
   }
 }
 
-/** POST / ve POST /add — aynı işlev (server.js’de de üst seviye kayıt var) */
 router.post("/", authMiddleware, roleMiddleware("client"), handleAddWater);
 router.post("/add", authMiddleware, roleMiddleware("client"), handleAddWater);
 
 router.handleAddWater = handleAddWater;
 
-/**
- * GET /daily?date= — Danışanın günlük özeti
- */
 router.get(
   "/daily",
   authMiddleware,
@@ -100,9 +96,6 @@ router.get(
   }
 );
 
-/**
- * GET /client/:clientId/daily?date= — Bağlı diyetisyen, danışanın günü
- */
 router.get(
   "/client/:clientId/daily",
   authMiddleware,

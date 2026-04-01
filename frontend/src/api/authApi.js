@@ -52,7 +52,6 @@ export const getMe = async () => {
 };
 
 export const deleteMyAccount = async (password) => {
-  // GET /me ile aynı kök; bazı dağıtımlarda /delete-account 404 verebiliyor.
   const response = await apiClient.post("/api/auth/me/delete", { password });
   return response.data;
 };

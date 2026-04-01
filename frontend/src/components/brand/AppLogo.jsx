@@ -1,6 +1,3 @@
-/**
- * Tek kaynaklı marka logosu — landing, panel ve eski Navbar ile aynı görsel.
- */
 export default function AppLogo({ className = "", size = 40, title }) {
   const s = Number(size) || 40;
   return (

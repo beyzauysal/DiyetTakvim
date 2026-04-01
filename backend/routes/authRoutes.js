@@ -61,7 +61,6 @@ function tryRemoveLocalProfilePhoto(photoUrl) {
     const fp = path.join(uploadDir, path.basename(name));
     if (fs.existsSync(fp)) fs.unlinkSync(fp);
   } catch {
-    /* yoksay */
   }
 }
 
@@ -821,10 +820,6 @@ router.post(
   }
 );
 
-/**
- * Hesabı kalıcı sil: şifre doğrulaması + ilişkili kayıtlar + kullanıcı dokümanı.
- * POST /delete-account: Vite/proxy ve bazı istemciler DELETE gövdesini iletmediği için önerilen yol.
- */
 async function handleDeleteAccount(req, res) {
   try {
     const { password } = req.body || {};
@@ -991,7 +986,6 @@ router.patch(
   handleAvailabilityUpdate
 );
 
-/** POST /availability — gereksinim dokümanı ile uyumlu (PATCH ile aynı işlev) */
 router.post(
   "/availability",
   authMiddleware,

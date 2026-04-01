@@ -64,7 +64,6 @@ export function AuthProvider({ children }) {
     try {
       await apiClient.post("/api/auth/logout");
     } catch {
-      /* çerez zaten sunucuda silinmiş olabilir */
     }
   };
 

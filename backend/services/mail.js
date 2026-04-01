@@ -65,11 +65,6 @@ async function deliverMail(mailOptions) {
   }
 }
 
-/**
- * SMTP_HOST tanımlı değilse kod konsola yazılır (geliştirme).
- * Gmail için SMTP_HOST=smtp.gmail.com yeterli; nodemailer `service: gmail` kullanır.
- * .env her zaman backend klasöründen okunur (server.js içinde path verilir).
- */
 async function sendVerificationEmail({ to, code }) {
   const appName = process.env.APP_NAME || "DiyetTakvim";
   const from =
