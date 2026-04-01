@@ -39,6 +39,12 @@ const allowedOrigins = getAllowedOrigins();
 const corsOptions = {
   origin: (origin, cb) => {
     const normalizedOrigin = origin ? origin.trim().replace(/\/$/, "") : origin;
+    console.log("CORS kontrol:", {
+      origin,
+      normalizedOrigin,
+      envOrigins: process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "",
+      allowedOrigins,
+    });
 
     if (!normalizedOrigin) {
       return cb(null, true);
