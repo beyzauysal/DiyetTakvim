@@ -4,17 +4,19 @@ import AppShell from "../../components/layout/AppShell";
 import apiClient from "../../api/apiClient";
 import { useAuth } from "../../context/AuthContext";
 
+const PROFILE_AVATAR_EMOJIS = ["🥗", "🍎", "🥑", "🥤", "💪", "🧘", "🌿", "☀️"];
+
 function ProfilePage() {
   const navigate = useNavigate();
   const { fetchMe, deleteAccount } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [name, setName] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [city, setCity] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
+  const [avatarEmoji, setAvatarEmoji] = useState("");
+  const [emojiBusy, setEmojiBusy] = useState(false);
   const [pageError, setPageError] = useState("");
   const [pageOk, setPageOk] = useState("");
   const [regeneratingInvite, setRegeneratingInvite] = useState(false);
@@ -31,7 +33,7 @@ function ProfilePage() {
       setName(u?.name || "");
       setSpecialty(u?.specialty || "");
       setCity(u?.city || "");
-      setPhotoUrl(u?.profile?.photoUrl || "");
+      setAvatarEmoji(u?.profile?.avatarEmoji || "");
     } catch (error) {
       alert(
         error.response?.data?.message || "Profil bilgileri alınamadı."
@@ -74,25 +76,36 @@ function ProfilePage() {
     }
   };
 
-  const handlePhoto = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  const handleEmojiPick = async (emoji) => {
     try {
-      setUploadingPhoto(true);
+      setEmojiBusy(true);
       setPageError("");
       setPageOk("");
-      const fd = new FormData();
-      fd.append("photo", file);
-      const { data } = await apiClient.post("/api/auth/profile-photo", fd);
-      const url = data.photoUrl || data.profile?.photoUrl || "";
-      setPhotoUrl(url);
-      setPageOk("Profil fotoğrafı güncellendi.");
+      await apiClient.patch("/api/auth/update-profile", { avatarEmoji: emoji });
+      setAvatarEmoji(emoji);
       fetchMe();
+      setPageOk("Profil simgesi güncellendi.");
     } catch (error) {
-      setPageError(error.response?.data?.message || "Fotoğraf yüklenemedi.");
+      setPageError(error.response?.data?.message || "Simge kaydedilemedi.");
     } finally {
-      setUploadingPhoto(false);
+      setEmojiBusy(false);
+    }
+  };
+
+  const handleClearEmoji = async () => {
+    if (!avatarEmoji) return;
+    try {
+      setEmojiBusy(true);
+      setPageError("");
+      setPageOk("");
+      await apiClient.patch("/api/auth/update-profile", { avatarEmoji: "" });
+      setAvatarEmoji("");
+      fetchMe();
+      setPageOk("Profil simgesi kaldırıldı.");
+    } catch (error) {
+      setPageError(error.response?.data?.message || "İşlem başarısız.");
+    } finally {
+      setEmojiBusy(false);
     }
   };
 
@@ -212,29 +225,51 @@ function ProfilePage() {
           </section>
 
           <section className="settings-section profile-form-card">
-            <h2 className="settings-section-title">Profil fotoğrafı</h2>
+            <h2 className="settings-section-title">Profil simgesi</h2>
             <div className="settings-photo-row">
               <div
-                className="settings-avatar"
-                style={{
-                  backgroundImage: photoUrl ? `url(${photoUrl})` : undefined,
-                }}
+                className={`settings-avatar${avatarEmoji ? " settings-avatar--emoji" : ""}`}
               >
-                {!photoUrl && <span>?</span>}
+                {avatarEmoji ? (
+                  <span>{avatarEmoji}</span>
+                ) : (
+                  <span>
+                    {name.trim() ? name.trim().charAt(0).toUpperCase() : "?"}
+                  </span>
+                )}
               </div>
               <div className="settings-photo-actions">
-                <label className="btn-secondary settings-file-label">
-                  {uploadingPhoto ? "Yükleniyor..." : "Fotoğraf seç"}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handlePhoto}
-                    disabled={uploadingPhoto}
-                    hidden
-                  />
-                </label>
-                <p className="settings-hint">JPEG, PNG veya WebP, en fazla 3 MB.</p>
+                <p className="settings-hint">
+                  Emoji seçin; seçmezseniz adınızın ilk harfi menü ve panelde gösterilir.
+                </p>
               </div>
+            </div>
+            <div className="settings-emoji-block">
+              <p className="settings-emoji-title">Emoji seçin</p>
+              <div className="settings-emoji-grid" role="group" aria-label="Profil emojisi">
+                {PROFILE_AVATAR_EMOJIS.map((em) => (
+                  <button
+                    key={em}
+                    type="button"
+                    className={`settings-emoji-btn${avatarEmoji === em ? " is-picked" : ""}`}
+                    onClick={() => handleEmojiPick(em)}
+                    disabled={emojiBusy}
+                    aria-pressed={avatarEmoji === em}
+                  >
+                    {em}
+                  </button>
+                ))}
+              </div>
+              {avatarEmoji ? (
+                <button
+                  type="button"
+                  className="btn-secondary settings-emoji-clear"
+                  onClick={handleClearEmoji}
+                  disabled={emojiBusy}
+                >
+                  Emoji seçimini kaldır
+                </button>
+              ) : null}
             </div>
           </section>
 

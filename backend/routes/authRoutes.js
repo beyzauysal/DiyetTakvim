@@ -1,9 +1,9 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
+const { getBackendUploadsDir } = require("../utils/uploadsDir");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const multer = require("multer");
 const User = require("../models/User");
 const RefreshToken = require("../models/RefreshToken");
 const Appointment = require("../models/Appointment");
@@ -20,36 +20,6 @@ const { createNotification } = require("../services/notificationService");
 
 const router = express.Router();
 
-const uploadDir = path.join(__dirname, "..", "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const profilePhotoStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || "") || ".jpg";
-    cb(null, `profile-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-  },
-});
-
-const profilePhotoUpload = multer({
-  storage: profilePhotoStorage,
-  limits: { fileSize: 3 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const ok = /^image\/(jpeg|png|webp)$/i.test(file.mimetype);
-    if (ok) cb(null, true);
-    else cb(new Error("Yalnızca JPEG, PNG veya WebP yükleyebilirsiniz."));
-  },
-});
-
-function publicUploadUrl(filename) {
-  const base =
-    process.env.PUBLIC_API_URL ||
-    `http://localhost:${process.env.PORT || 5050}`;
-  return `${base.replace(/\/$/, "")}/uploads/${filename}`;
-}
-
 function tryRemoveLocalProfilePhoto(photoUrl) {
   if (!photoUrl || typeof photoUrl !== "string") return;
   try {
@@ -58,7 +28,7 @@ function tryRemoveLocalProfilePhoto(photoUrl) {
     if (idx === -1) return;
     let name = photoUrl.slice(idx + marker.length).split("?")[0];
     if (!name || name.includes("..") || name.includes("/") || name.includes("\\")) return;
-    const fp = path.join(uploadDir, path.basename(name));
+    const fp = path.join(getBackendUploadsDir(), path.basename(name));
     if (fs.existsSync(fp)) fs.unlinkSync(fp);
   } catch {
   }
@@ -1019,6 +989,7 @@ router.patch(
       }
 
       const prev = user.profile || {};
+      if (prev.photoUrl) tryRemoveLocalProfilePhoto(prev.photoUrl);
       const updatedAge = age !== undefined ? age : prev.age;
       const updatedGender =
         gender !== undefined ? gender : prev.gender || "";
@@ -1037,7 +1008,7 @@ router.patch(
         height: updatedHeight || null,
         weight: updatedWeight || null,
         bmi: calculateBmi(updatedHeight, updatedWeight),
-        photoUrl: prev.photoUrl || "",
+        photoUrl: "",
         avatarEmoji: updatedEmoji,
       };
 
@@ -1051,64 +1022,6 @@ router.patch(
     } catch (error) {
       res.status(500).json({
         message: "Profil güncellenirken hata oluştu.",
-        error: error.message,
-      });
-    }
-  }
-);
-
-router.post(
-  "/profile-photo",
-  authMiddleware,
-  (req, res, next) => {
-    profilePhotoUpload.single("photo")(req, res, (err) => {
-      if (err) {
-        return res.status(400).json({
-          message: err.message || "Dosya yüklenemedi.",
-        });
-      }
-      next();
-    });
-  },
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          message: "Fotoğraf seçin.",
-        });
-      }
-
-      const user = await User.findById(req.user.userId);
-
-      if (!user) {
-        return res.status(404).json({
-          message: "Kullanıcı bulunamadı.",
-        });
-      }
-
-      const prev = user.profile || {};
-      const url = publicUploadUrl(req.file.filename);
-
-      user.profile = {
-        age: prev.age || null,
-        gender: prev.gender || "",
-        height: prev.height || null,
-        weight: prev.weight || null,
-        bmi: prev.bmi ?? calculateBmi(prev.height, prev.weight),
-        photoUrl: url,
-        avatarEmoji: prev.avatarEmoji || "",
-      };
-
-      await user.save();
-
-      res.status(200).json({
-        message: "Profil fotoğrafı güncellendi.",
-        profile: user.profile,
-        photoUrl: url,
-      });
-    } catch (error) {
-      res.status(500).json({
-        message: "Fotoğraf kaydedilemedi.",
         error: error.message,
       });
     }

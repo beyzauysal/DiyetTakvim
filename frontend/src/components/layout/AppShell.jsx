@@ -206,11 +206,10 @@ function AppShell({
   const settingsPath =
     role === "dietitian" ? "/dietitian/settings" : "/client/settings";
 
-  const photoUrl = user?.profile?.photoUrl?.trim();
   const avatarEmoji = user?.profile?.avatarEmoji?.trim();
   const displayName = (user?.name || user?.email || "Kullanıcı").trim();
   const initial = displayName ? displayName.charAt(0).toUpperCase() : "?";
-  const showEmoji = !photoUrl && avatarEmoji;
+  const showEmoji = Boolean(avatarEmoji);
 
   const { pathname, hash } = location;
 
@@ -274,13 +273,8 @@ function AppShell({
           <div className="app-shell-user">
             <div
               className={`app-shell-user-avatar${showEmoji ? " app-shell-user-avatar--emoji" : ""}`}
-              style={photoUrl ? { backgroundImage: `url(${photoUrl})` } : undefined}
             >
-              {photoUrl ? null : showEmoji ? (
-                <span>{avatarEmoji}</span>
-              ) : (
-                <span>{initial}</span>
-              )}
+              {showEmoji ? <span>{avatarEmoji}</span> : <span>{initial}</span>}
             </div>
             <div className="app-shell-user-text">
               <strong>{displayName}</strong>

@@ -27,14 +27,12 @@ function ClientSettingsPage() {
     weight: "",
     bmi: "",
   });
-  const [photoUrl, setPhotoUrl] = useState("");
   const [accountEmail, setAccountEmail] = useState("");
   const [accountPhone, setAccountPhone] = useState("");
   const [avatarEmoji, setAvatarEmoji] = useState("");
   const [emojiBusy, setEmojiBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [pageError, setPageError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
@@ -54,7 +52,6 @@ function ClientSettingsPage() {
         weight: user.profile?.weight ?? "",
         bmi: user.profile?.bmi ?? "",
       });
-      setPhotoUrl(user.profile?.photoUrl || "");
       setAccountEmail(user.email ? String(user.email) : "");
       setAccountPhone(user.phone ? `0${String(user.phone).replace(/^0+/, "")}` : "");
       setAvatarEmoji(user.profile?.avatarEmoji || "");
@@ -172,7 +169,7 @@ function ClientSettingsPage() {
       await apiClient.patch("/api/auth/update-profile", { avatarEmoji: emoji });
       setAvatarEmoji(emoji);
       fetchMe();
-      setSuccessMessage("Profil simgesi güncellendi (fotoğraf yokken gösterilir).");
+      setSuccessMessage("Profil simgesi güncellendi.");
     } catch (err) {
       setPageError(err.response?.data?.message || "Simge kaydedilemedi.");
     } finally {
@@ -196,26 +193,6 @@ function ClientSettingsPage() {
     }
   };
 
-  const handlePhoto = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    try {
-      setUploadingPhoto(true);
-      setPageError("");
-      const fd = new FormData();
-      fd.append("photo", file);
-      const { data } = await apiClient.post("/api/auth/profile-photo", fd);
-      setPhotoUrl(data.photoUrl || data.profile?.photoUrl || "");
-      setSuccessMessage("Profil fotoğrafı güncellendi.");
-      fetchMe();
-    } catch (err) {
-      setPageError(err.response?.data?.message || "Fotoğraf yüklenemedi.");
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
   if (loading) {
     return (
       <AppShell role="client" title="Ayarlar" subtitle="Yükleniyor…">
@@ -230,7 +207,7 @@ function ClientSettingsPage() {
     <AppShell
       role="client"
       title="Ayarlar"
-      subtitle="Profil fotoğrafı ve sağlık ölçüleriniz; su takibinde her bardak tıklamasında eklenecek miktar ve günlük hedef buradan ayarlanır."
+      subtitle="Profil simgeniz ve sağlık ölçüleriniz; su takibinde her bardak tıklamasında eklenecek miktar ve günlük hedef buradan ayarlanır."
     >
       <div className="dashboard-page settings-page">
         <div className="page-content-narrow">
@@ -242,38 +219,33 @@ function ClientSettingsPage() {
           )}
 
           <section className="settings-section profile-form-card">
-            <h2 className="settings-section-title">Profil fotoğrafı</h2>
+            <h2 className="settings-section-title">Profil simgesi</h2>
             <div className="settings-photo-row">
               <div
-                className="settings-avatar"
-                style={{
-                  backgroundImage: photoUrl ? `url(${photoUrl})` : undefined,
-                }}
+                className={`settings-avatar${avatarEmoji ? " settings-avatar--emoji" : ""}`}
               >
-                {!photoUrl && <span>?</span>}
+                {avatarEmoji ? (
+                  <span>{avatarEmoji}</span>
+                ) : (
+                  <span>
+                    {String(formData.name || "").trim()
+                      ? String(formData.name).trim().charAt(0).toUpperCase()
+                      : "?"}
+                  </span>
+                )}
               </div>
               <div className="settings-photo-actions">
-                <label className="btn-secondary settings-file-label">
-                  {uploadingPhoto ? "Yükleniyor..." : "Fotoğraf seç"}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handlePhoto}
-                    disabled={uploadingPhoto}
-                    hidden
-                  />
-                </label>
                 <p className="settings-hint">
-                  JPEG, PNG veya WebP. Fotoğraf varken emoji gizlenir; yalnızca
-                  yüz simgesi için bu seçenekleri kullanın.
+                  Aşağıdan bir emoji seçin; seçmezseniz adınızın ilk harfi menü ve
+                  panelde gösterilir.
                 </p>
               </div>
             </div>
 
             <div className="settings-emoji-block">
-              <p className="settings-emoji-title">Veya emoji simge</p>
+              <p className="settings-emoji-title">Emoji seçin</p>
               <p className="settings-hint settings-emoji-desc">
-                Fotoğraf yüklemediyseniz panel ve menüde bu karakter görünür.
+                Panel ve menüde görünür.
               </p>
               <div className="settings-emoji-grid" role="group" aria-label="Profil emojisi">
                 {PROFILE_AVATAR_EMOJIS.map((em) => (

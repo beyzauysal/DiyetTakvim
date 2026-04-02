@@ -4,7 +4,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 const path = require("path");
-const fs = require("fs");
+const { getBackendUploadsDir, ensureUploadsDirExists } = require("./utils/uploadsDir");
 
 try {
   require("dotenv").config({ path: path.join(__dirname, ".env") });
@@ -62,19 +62,13 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 app.use(express.json({ limit: "6mb" }));
 app.use(cookieParser());
 
-const uploadsDir = process.env.VERCEL
-  ? path.join("/tmp", "uploads")
-  : path.join(__dirname, "uploads");
-
-try {
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-} catch (_) {}
+const uploadsDir = getBackendUploadsDir();
+ensureUploadsDirExists(uploadsDir);
 
 app.use("/uploads", express.static(uploadsDir));
 
@@ -187,4 +181,5 @@ app.use("/testimonials", testimonialRoutes);
 app.get("/", (_req, res) => {
   res.status(200).send("API çalışıyor");
 });
-module.exports = { app, ensureMongoConnected, uploadsDir };
+
+module.exports = app;

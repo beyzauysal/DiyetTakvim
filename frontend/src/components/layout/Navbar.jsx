@@ -7,11 +7,10 @@ function Navbar({ role }) {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  const photoUrl = user?.profile?.photoUrl?.trim();
   const avatarEmoji = user?.profile?.avatarEmoji?.trim();
   const displayName = (user?.name || user?.email || "").trim();
   const initial = displayName ? displayName.charAt(0).toUpperCase() : "?";
-  const showEmoji = !photoUrl && avatarEmoji;
+  const showEmoji = Boolean(avatarEmoji);
 
   const handleLogout = () => {
     logout();
@@ -79,14 +78,9 @@ function Navbar({ role }) {
         <div className="navbar-actions">
           <div
             className={`navbar-avatar${showEmoji ? " navbar-avatar--emoji" : ""}`}
-            style={
-              photoUrl
-                ? { backgroundImage: `url(${photoUrl})` }
-                : undefined
-            }
             title={displayName || "Profil"}
           >
-            {photoUrl ? null : showEmoji ? (
+            {showEmoji ? (
               <span className="navbar-avatar-emoji">{avatarEmoji}</span>
             ) : (
               <span>{initial}</span>

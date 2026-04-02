@@ -8,14 +8,14 @@ const User = require("../models/User");
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 const { analyzeMealWithAI } = require("../services/calorieAnalyzer");
-
-const uploadDir = path.join(__dirname, "..", "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const { getBackendUploadsDir, ensureUploadsDirExists } = require("../utils/uploadsDir");
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
+  destination: (req, file, cb) => {
+    const dir = getBackendUploadsDir();
+    ensureUploadsDirExists(dir);
+    cb(null, dir);
+  },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname || "") || ".jpg";
     cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
@@ -66,8 +66,9 @@ function localUploadAbsolutePathFromUrl(urlStr) {
   if (!m) return null;
   const name = path.basename(m[1]);
   if (!name || name !== m[1] || name.includes("..")) return null;
-  const abs = path.resolve(path.join(uploadDir, name));
-  const root = path.resolve(uploadDir);
+  const rootDir = getBackendUploadsDir();
+  const abs = path.resolve(path.join(rootDir, name));
+  const root = path.resolve(rootDir);
   if (!abs.startsWith(root + path.sep) && abs !== root) return null;
   return abs;
 }
