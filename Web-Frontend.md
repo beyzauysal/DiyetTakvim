@@ -1,16 +1,10 @@
 # DiyetTakvim — Web Frontend Dokümantasyonu
 
-## Canlı site adresi (domain)
+**Web Frontend Adresi:** [DiyetTakvim](https://diyet-takvim.vercel.app/)
 
-**Buraya deploy sonrası tam adresi yazın:**
+---
 
-```
-https://BURAYA-FRONTEND-DOMAIN-YAZIN.com
-```
-
-Örnek: `https://diyettakvim.com` veya `https://diyettakvim.vercel.app`
-
-Tarayıcıdan bu adrese girildiğinde uygulama açılmalı (ödev şartı).
+**Web Frontend Test Video:** [DiyetTakvim web video](https://youtu.be/45r2ppj-drU)
 
 ---
 
