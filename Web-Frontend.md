@@ -4,7 +4,7 @@
 
 ---
 
-**Web Frontend Test Video:** [DiyetTakvim web video](https://youtu.be/45r2ppj-drU)
+**Web Frontend Test Video:** [DiyetTakvim web video](https://youtu.be/fLW5czxUkNo)
 
 ---
 
