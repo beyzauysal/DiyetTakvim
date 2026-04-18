@@ -9,6 +9,10 @@ const {
   cancelAppointment,
   updateAppointment,
 } = require("../services/appointmentHandlers");
+const cacheService = require("../services/cacheService");
+const {
+  invalidateAppointmentCachesForDietitianOnDate,
+} = require("../services/appointmentCacheInvalidation");
 
 const router = express.Router();
 
@@ -186,6 +190,11 @@ router.post(
         relatedAppointment: newAppointment._id,
       });
 
+      await invalidateAppointmentCachesForDietitianOnDate(
+        dietitianId,
+        appointmentDateObj
+      );
+
       res.status(201).json({
         message: "Randevu oluşturuldu.",
         appointment: newAppointment,
@@ -229,6 +238,12 @@ router.get(
         });
       }
 
+      const slotsKey = cacheService.cacheKeySlots(String(dietitian._id), date);
+      const cachedSlots = await cacheService.getCache(slotsKey);
+      if (cachedSlots) {
+        return res.status(200).json(cachedSlots);
+      }
+
       const availability = dietitian.availability || {};
       const {
         workingDays = [],
@@ -240,10 +255,16 @@ router.get(
       } = availability;
 
       if (!workStart || !workEnd || !slotDuration) {
-        return res.status(200).json({
+        const payload = {
           message: "Diyetisyenin çalışma saatleri henüz ayarlanmamış.",
           availableSlots: [],
-        });
+        };
+        await cacheService.setCache(
+          slotsKey,
+          payload,
+          cacheService.TTL.SLOTS_SECONDS
+        );
+        return res.status(200).json(payload);
       }
 
       const selectedDate = new Date(`${date}T00:00:00`);
@@ -252,10 +273,16 @@ router.get(
       });
 
       if (!workingDays.includes(dayName)) {
-        return res.status(200).json({
+        const payload = {
           message: "Diyetisyen bu gün çalışmıyor.",
           availableSlots: [],
-        });
+        };
+        await cacheService.setCache(
+          slotsKey,
+          payload,
+          cacheService.TTL.SLOTS_SECONDS
+        );
+        return res.status(200).json(payload);
       }
 
       const workStartMinutes = timeToMinutes(workStart);
@@ -308,10 +335,16 @@ router.get(
         availableSlots.push(slotTime);
       }
 
-      res.status(200).json({
+      const payload = {
         message: "Uygun saatler getirildi.",
         availableSlots,
-      });
+      };
+      await cacheService.setCache(
+        slotsKey,
+        payload,
+        cacheService.TTL.SLOTS_SECONDS
+      );
+      return res.status(200).json(payload);
     } catch (error) {
       res.status(500).json({
         message: "Uygun saatler alınırken hata oluştu.",
@@ -381,6 +414,13 @@ router.get(
         });
       }
 
+      const dietitianId = String(req.user.userId);
+      const dailyKey = cacheService.cacheKeyDaily(dietitianId, date);
+      const cachedDaily = await cacheService.getCache(dailyKey);
+      if (cachedDaily) {
+        return res.status(200).json(cachedDaily);
+      }
+
       const start = new Date(`${date}T00:00:00`);
       const end = new Date(`${date}T23:59:59.999`);
 
@@ -395,10 +435,16 @@ router.get(
         .populate("client", "name email role")
         .sort({ appointmentDate: 1 });
 
-      res.status(200).json({
+      const payload = {
         message: "Günlük randevular getirildi.",
         appointments,
-      });
+      };
+      await cacheService.setCache(
+        dailyKey,
+        payload,
+        cacheService.TTL.DAILY_SECONDS
+      );
+      return res.status(200).json(payload);
     } catch (error) {
       res.status(500).json({
         message: "Randevular alınırken hata oluştu.",
@@ -424,6 +470,17 @@ router.get(
 
       const parsedYear = Number(year);
       const parsedMonth = Number(month);
+
+      const dietitianId = String(req.user.userId);
+      const monthlyKey = cacheService.cacheKeyMonthly(
+        dietitianId,
+        parsedYear,
+        parsedMonth
+      );
+      const cachedMonthly = await cacheService.getCache(monthlyKey);
+      if (cachedMonthly) {
+        return res.status(200).json(cachedMonthly);
+      }
 
       const startDate = new Date(parsedYear, parsedMonth - 1, 1, 0, 0, 0, 0);
       const endDate = new Date(parsedYear, parsedMonth, 0, 23, 59, 59, 999);
@@ -457,10 +514,16 @@ router.get(
         count,
       }));
 
-      res.status(200).json({
+      const payload = {
         message: "Aylık randevu özeti getirildi.",
         summary,
-      });
+      };
+      await cacheService.setCache(
+        monthlyKey,
+        payload,
+        cacheService.TTL.MONTHLY_SECONDS
+      );
+      return res.status(200).json(payload);
     } catch (error) {
       res.status(500).json({
         message: "Aylık özet alınırken hata oluştu.",

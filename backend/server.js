@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { app } = require("./app");
+const { initRedis } = require("./config/redis");
 
 const PORT = process.env.PORT || 5050;
 
@@ -13,6 +14,12 @@ async function startServer() {
     console.log(
       "Uyarı: Sunucu yine de dinleniyor; veritabanı olmadan kayıt istekleri hata verebilir."
     );
+  }
+
+  try {
+    await initRedis();
+  } catch (e) {
+    console.error("[redis] initRedis beklenmeyen hata:", e?.message || e);
   }
 
   app.listen(PORT, () => {

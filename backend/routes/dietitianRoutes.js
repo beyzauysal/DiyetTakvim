@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const User = require("../models/User");
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
+const cacheService = require("../services/cacheService");
 
 const router = express.Router();
 
@@ -93,6 +94,12 @@ router.get(
         });
       }
 
+      const clientsKey = cacheService.cacheKeyClients(tokenUserId);
+      const cachedClients = await cacheService.getCache(clientsKey);
+      if (cachedClients) {
+        return res.status(200).json(cachedClients);
+      }
+
       const clients = await User.find({
         role: "client",
         linkedDietitian: tokenUserId,
@@ -100,10 +107,16 @@ router.get(
         .select("name email profile createdAt")
         .sort({ createdAt: -1 });
 
-      res.status(200).json({
+      const payload = {
         message: "Diyetisyene bağlı danışanlar getirildi.",
         clients,
-      });
+      };
+      await cacheService.setCache(
+        clientsKey,
+        payload,
+        cacheService.TTL.CLIENTS_SECONDS
+      );
+      return res.status(200).json(payload);
     } catch (error) {
       res.status(500).json({
         message: "Danışanlar alınırken hata oluştu.",

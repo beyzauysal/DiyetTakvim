@@ -71,4 +71,33 @@ router.patch("/read/:id", authMiddleware, async (req, res) => {
   }
 });
 
+router.delete("/:id", authMiddleware, async (req, res) => {
+  try {
+    const notification = await Notification.findById(req.params.id);
+
+    if (!notification) {
+      return res.status(404).json({
+        message: "Bildirim bulunamadı.",
+      });
+    }
+
+    if (notification.user.toString() !== req.user.userId) {
+      return res.status(403).json({
+        message: "Bu bildirimi silme yetkiniz yok.",
+      });
+    }
+
+    await Notification.deleteOne({ _id: req.params.id });
+
+    res.status(200).json({
+      message: "Bildirim silindi.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Bildirim silinemedi.",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;

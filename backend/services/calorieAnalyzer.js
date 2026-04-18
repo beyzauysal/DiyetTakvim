@@ -1,10 +1,17 @@
 const OpenAI = require("openai");
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 const DEFAULT_MODEL = "gpt-4o-mini";
+
+let openaiClient = null;
+
+function getOpenAIClient() {
+  const key = process.env.OPENAI_API_KEY?.trim();
+  if (!key) return null;
+  if (!openaiClient) {
+    openaiClient = new OpenAI({ apiKey: key });
+  }
+  return openaiClient;
+}
 
 function extractJsonObject(raw) {
   if (!raw || typeof raw !== "string") return null;
@@ -28,7 +35,8 @@ function extractJsonObject(raw) {
 }
 
 async function analyzeMealWithAI({ mealType, note, imageUrl }) {
-  if (!process.env.OPENAI_API_KEY?.trim()) {
+  const client = getOpenAIClient();
+  if (!client) {
     throw new Error("OPENAI_API_KEY tanımlı değil (.env).");
   }
 

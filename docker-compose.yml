@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   mongo:
     image: mongo:7
@@ -10,6 +8,28 @@ services:
     volumes:
       - diyettakvim_mongo_data:/data/db
 
+  redis:
+    image: redis:7-alpine
+    container_name: diyettakvim_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - diyettakvim_redis_data:/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: diyettakvim_rabbitmq
+    restart: unless-stopped
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - diyettakvim_rabbitmq_data:/var/lib/rabbitmq
+
   backend:
     build:
       context: ./backend
@@ -17,6 +37,8 @@ services:
     restart: unless-stopped
     depends_on:
       - mongo
+      - redis
+      - rabbitmq
     environment:
       NODE_ENV: production
       PORT: 5050
@@ -24,16 +46,10 @@ services:
       JWT_SECRET: change-me
       JWT_REFRESH_SECRET: change-me-too
       APP_NAME: DiyetTakvim
-      # Lokal docker'da frontend origin'i:
       CORS_ORIGINS: http://localhost:5173,http://localhost:8080
-      # Upload linkleri üretimi için (lokal):
       PUBLIC_API_URL: http://localhost:5050
-      # AI/Mail opsiyonel:
-      # OPENAI_API_KEY: ...
-      # SMTP_HOST: smtp.gmail.com
-      # SMTP_USER: ...
-      # SMTP_PASS: ...
-      # MAIL_FROM: "DiyetTakvim <noreply@example.com>"
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://rabbitmq
     ports:
       - "5050:5050"
 
@@ -51,3 +67,5 @@ services:
 
 volumes:
   diyettakvim_mongo_data:
+  diyettakvim_redis_data:
+  diyettakvim_rabbitmq_data:

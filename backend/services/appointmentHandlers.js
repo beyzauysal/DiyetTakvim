@@ -2,6 +2,10 @@ const { createNotification } = require("./notificationService");
 const Appointment = require("../models/Appointment");
 const User = require("../models/User");
 const { timeToMinutes } = require("../utils/appointmentTime");
+const {
+  invalidateAppointmentCachesForDietitianOnDate,
+  invalidateAppointmentCachesForDietitianOnDateMove,
+} = require("./appointmentCacheInvalidation");
 
 async function cancelAppointment(req, res) {
   try {
@@ -25,6 +29,11 @@ async function cancelAppointment(req, res) {
 
     appointment.status = "cancelled";
     await appointment.save();
+
+    await invalidateAppointmentCachesForDietitianOnDate(
+      appointment.dietitian,
+      appointment.appointmentDate
+    );
 
     await createNotification({
       user: appointment.client,
@@ -81,6 +90,8 @@ async function updateAppointment(req, res) {
         message: "İptal edilmiş randevu güncellenemez.",
       });
     }
+
+    const previousAppointmentAt = new Date(appointment.appointmentDate);
 
     if (appointmentDate) {
       const appointmentDateObj = new Date(appointmentDate);
@@ -197,6 +208,12 @@ async function updateAppointment(req, res) {
     }
 
     await appointment.save();
+
+    await invalidateAppointmentCachesForDietitianOnDateMove(
+      appointment.dietitian,
+      previousAppointmentAt,
+      appointment.appointmentDate
+    );
 
     await createNotification({
       user: appointment.client,

@@ -17,6 +17,10 @@ const { isProbablyEmail } = require("../utils/phoneNormalize");
 const { applyVerificationChallenge } = require("../services/emailVerification");
 const { applyPasswordResetChallenge } = require("../services/passwordReset");
 const { createNotification } = require("../services/notificationService");
+const {
+  invalidateAllAppointmentCachesForDietitian,
+  invalidateClientsCacheForDietitian,
+} = require("../services/appointmentCacheInvalidation");
 
 const router = express.Router();
 
@@ -702,6 +706,8 @@ router.post(
         $unset: { pendingDietitian: "" },
       });
 
+      await invalidateClientsCacheForDietitian(req.user.userId);
+
       const dietitian = await User.findById(req.user.userId).select("name");
 
       await createNotification({
@@ -825,6 +831,14 @@ async function handleDeleteAccount(req, res) {
 
     const photoUrl = user.profile?.photoUrl || "";
 
+    if (user.role === "client" && user.linkedDietitian) {
+      await invalidateClientsCacheForDietitian(user.linkedDietitian);
+      await invalidateAllAppointmentCachesForDietitian(user.linkedDietitian);
+    } else if (user.role === "dietitian") {
+      await invalidateAllAppointmentCachesForDietitian(userId);
+      await invalidateClientsCacheForDietitian(userId);
+    }
+
     const appointments = await Appointment.find({
       $or: [{ client: userId }, { dietitian: userId }],
     }).select("_id");
@@ -936,6 +950,8 @@ async function handleAvailabilityUpdate(req, res) {
     };
 
     await user.save();
+
+    await invalidateAllAppointmentCachesForDietitian(req.user.userId);
 
     res.status(200).json({
       message: "Çalışma saatleri güncellendi.",
