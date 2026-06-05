@@ -182,8 +182,8 @@ app.get("/", (_req, res) => {
   res.status(200).send("API çalışıyor");
 });
 
-module.exports = {
-  app,
-  ensureMongoConnected,
-  uploadsDir,
-};
+module.exports = app;
+
+module.exports.app = app;
+module.exports.ensureMongoConnected = ensureMongoConnected;
+module.exports.uploadsDir = uploadsDir;
