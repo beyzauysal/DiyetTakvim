@@ -118,6 +118,20 @@ const userSchema = new mongoose.Schema(
       },
     },
 
+    waterPreferences: {
+      goalMl: {
+        type: Number,
+        default: 2000,
+        min: 500,
+        max: 5000,
+      },
+      quickAddMl: {
+        type: Number,
+        default: 200,
+        enum: [100, 150, 200, 250, 300, 500],
+      },
+    },
+
     profile: {
       age: {
         type: Number,

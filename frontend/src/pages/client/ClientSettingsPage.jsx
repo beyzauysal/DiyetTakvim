@@ -7,6 +7,7 @@ import {
   readWaterGoalMl,
   readWaterSipMl,
   SIP_PRESETS,
+  syncWaterPrefsFromServer,
   writeWaterPrefs,
 } from "../../lib/waterPrefs";
 
@@ -55,6 +56,17 @@ function ClientSettingsPage() {
       setAccountEmail(user.email ? String(user.email) : "");
       setAccountPhone(user.phone ? `0${String(user.phone).replace(/^0+/, "")}` : "");
       setAvatarEmoji(user.profile?.avatarEmoji || "");
+      if (user.role === "client" && user.waterPreferences) {
+        const wg = Number(user.waterPreferences.goalMl);
+        const wq = Number(user.waterPreferences.quickAddMl);
+        if (Number.isFinite(wg) && wg >= 500 && wg <= 5000) {
+          setGoalMl(wg);
+        }
+        if (SIP_PRESETS.includes(wq)) {
+          setSipMl(wq);
+        }
+        syncWaterPrefsFromServer(user.waterPreferences);
+      }
     } catch (e) {
       setPageError(e.response?.data?.message || "Profil yüklenemedi.");
     } finally {
@@ -68,11 +80,25 @@ function ClientSettingsPage() {
     loadMe();
   }, []);
 
-  const handleWaterSave = (e) => {
+  const handleWaterSave = async (e) => {
     e.preventDefault();
-    writeWaterPrefs({ sipMl, goalMl });
-    setWaterSaved(true);
-    setTimeout(() => setWaterSaved(false), 2500);
+    setPageError("");
+    try {
+      await apiClient.patch("/api/auth/water-preferences", {
+        goalMl: Number(goalMl),
+        quickAddMl: Number(sipMl),
+      });
+      writeWaterPrefs({ sipMl, goalMl });
+      setWaterSaved(true);
+      setTimeout(() => setWaterSaved(false), 2500);
+      await fetchMe();
+    } catch (err) {
+      setPageError(
+        err.response?.data?.message ||
+          err.message ||
+          "Su tercihleri kaydedilemedi."
+      );
+    }
   };
 
   const handleDeleteAccount = async () => {

@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { app } = require("./app");
 const { initRedis } = require("./config/redis");
+const { initRabbitMq } = require("./config/rabbitmq");
 
 const PORT = process.env.PORT || 5050;
 
@@ -20,6 +21,12 @@ async function startServer() {
     await initRedis();
   } catch (e) {
     console.error("[redis] initRedis beklenmeyen hata:", e?.message || e);
+  }
+
+  try {
+    await initRabbitMq();
+  } catch (e) {
+    console.error("[rabbitmq] initRabbitMq beklenmeyen hata:", e?.message || e);
   }
 
   app.listen(PORT, () => {

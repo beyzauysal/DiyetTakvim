@@ -138,7 +138,35 @@
         "tags": ["Kimlik"],
         "summary": "Oturumdaki kullanıcı",
         "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "user nesnesi" }, "401": { "description": "Yetkisiz" } }
+        "responses": { "200": { "description": "user nesnesi (client için waterPreferences)" }, "401": { "description": "Yetkisiz" } }
+      }
+    },
+    "/auth/water-preferences": {
+      "patch": {
+        "tags": ["Kimlik"],
+        "summary": "Günlük su hedefi ve hızlı ekleme (danışan)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "En az bir alan zorunlu",
+                "properties": {
+                  "goalMl": { "type": "integer", "minimum": 500, "maximum": 5000, "example": 2500 },
+                  "quickAddMl": { "type": "integer", "enum": [100, 150, 200, 250, 300, 500], "example": 300 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "waterPreferences güncellendi" },
+          "400": { "description": "Geçersiz gövde" },
+          "401": { "description": "Yetkisiz" },
+          "403": { "description": "Yalnızca danışan" }
+        }
       }
     },
     "/auth/refresh": {

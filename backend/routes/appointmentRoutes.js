@@ -1,4 +1,7 @@
 const { createNotification } = require("../services/notificationService");
+const {
+  publishAppointmentCreatedEvent,
+} = require("../services/appointmentEventPublisher");
 const express = require("express");
 const Appointment = require("../models/Appointment");
 const User = require("../models/User");
@@ -182,12 +185,9 @@ router.post(
         relatedAppointment: newAppointment._id,
       });
 
-      await createNotification({
-        user: dietitianId,
-        type: "appointment_created",
-        title: "Yeni randevu oluşturuldu",
-        message: "Takviminize yeni bir randevu eklendi.",
-        relatedAppointment: newAppointment._id,
+      await publishAppointmentCreatedEvent({
+        appointment: newAppointment,
+        clientName: clientUser.name || "",
       });
 
       await invalidateAppointmentCachesForDietitianOnDate(

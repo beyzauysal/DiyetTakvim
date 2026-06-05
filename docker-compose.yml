@@ -49,9 +49,29 @@ services:
       CORS_ORIGINS: http://localhost:5173,http://localhost:8080
       PUBLIC_API_URL: http://localhost:5050
       REDIS_URL: redis://redis:6379
-      RABBITMQ_URL: amqp://rabbitmq
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_EXCHANGE: diyettakvim.appointments.exchange
+      RABBITMQ_APPOINTMENT_CREATED_QUEUE: diyettakvim.notification.appointment-created.queue
+      RABBITMQ_APPOINTMENT_CREATED_ROUTING_KEY: appointment.created
     ports:
       - "5050:5050"
+
+  backend-worker:
+    build:
+      context: ./backend
+    container_name: diyettakvim_backend_worker
+    restart: unless-stopped
+    depends_on:
+      - mongo
+      - rabbitmq
+    environment:
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/diyettakvim
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_EXCHANGE: diyettakvim.appointments.exchange
+      RABBITMQ_APPOINTMENT_CREATED_QUEUE: diyettakvim.notification.appointment-created.queue
+      RABBITMQ_APPOINTMENT_CREATED_ROUTING_KEY: appointment.created
+    command: ["node", "workers/appointmentCreatedConsumer.js"]
 
   frontend:
     build:

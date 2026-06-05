@@ -33,3 +33,16 @@ export function writeWaterPrefs({ sipMl, goalMl }) {
   }
   window.dispatchEvent(new CustomEvent(WATER_PREFS_EVENT));
 }
+
+/** Sunucudaki su tercihlerini localStorage + widget ile hizalar (web–mobil ortak kaynak). */
+export function syncWaterPrefsFromServer(prefs) {
+  if (!prefs || typeof prefs !== "object") return;
+  const goal = Number(prefs.goalMl);
+  const quick = Number(prefs.quickAddMl);
+  const g =
+    Number.isFinite(goal) && goal >= 500 && goal <= 5000 ? goal : 2000;
+  const q = SIP_PRESETS.includes(quick) ? quick : 200;
+  localStorage.setItem(LS_GOAL, String(g));
+  localStorage.setItem(LS_SIP, String(q));
+  window.dispatchEvent(new CustomEvent(WATER_PREFS_EVENT));
+}

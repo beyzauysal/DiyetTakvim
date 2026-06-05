@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import apiClient from "../api/apiClient";
 import { deleteMyAccount } from "../api/authApi";
+import { syncWaterPrefsFromServer } from "../lib/waterPrefs";
 
 const AuthContext = createContext();
 
@@ -24,7 +25,16 @@ export function AuthProvider({ children }) {
       if (localStorage.getItem("token") !== tokenAtRequestStart) {
         return;
       }
-      setUser(response.data.user);
+      const u = response.data.user;
+      setUser(u);
+      if (u?.role === "client" && u?.waterPreferences) {
+        syncWaterPrefsFromServer(u.waterPreferences);
+      }
+      try {
+        localStorage.setItem("user", JSON.stringify(u));
+      } catch (_) {
+        /* ignore */
+      }
     } catch (error) {
       console.error("Kullanıcı bilgisi alınamadı:", error);
       const status = error.response?.status;
@@ -48,6 +58,9 @@ export function AuthProvider({ children }) {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
+    if (userData?.role === "client" && userData?.waterPreferences) {
+      syncWaterPrefsFromServer(userData.waterPreferences);
+    }
   };
 
   const logout = () => {

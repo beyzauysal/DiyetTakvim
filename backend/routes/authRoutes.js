@@ -24,6 +24,21 @@ const {
 
 const router = express.Router();
 
+const WATER_QUICK_ADD_ALLOWED = [100, 150, 200, 250, 300, 500];
+
+function normalizeWaterPreferences(user) {
+  const wp = user && user.waterPreferences;
+  let goalMl = Number(wp?.goalMl);
+  let quickAddMl = Number(wp?.quickAddMl);
+  if (!Number.isFinite(goalMl) || goalMl < 500 || goalMl > 5000) {
+    goalMl = 2000;
+  }
+  if (!WATER_QUICK_ADD_ALLOWED.includes(quickAddMl)) {
+    quickAddMl = 200;
+  }
+  return { goalMl: Math.round(goalMl), quickAddMl };
+}
+
 function tryRemoveLocalProfilePhoto(photoUrl) {
   if (!photoUrl || typeof photoUrl !== "string") return;
   try {
@@ -555,6 +570,10 @@ router.post("/login", async (req, res) => {
           specialty: user.specialty || "",
           city: user.city || "",
           profile: user.profile,
+          waterPreferences:
+            user.role === "client"
+              ? normalizeWaterPreferences(user)
+              : undefined,
         },
       });
   } catch (error) {
@@ -622,6 +641,10 @@ router.post("/refresh", async (req, res) => {
         specialty: user.specialty || "",
         city: user.city || "",
         profile: user.profile,
+        waterPreferences:
+          user.role === "client"
+            ? normalizeWaterPreferences(user)
+            : undefined,
       },
     });
   } catch (error) {
@@ -665,9 +688,14 @@ router.get("/me", authMiddleware, async (req, res) => {
       });
     }
 
+    const userObj = user.toObject();
+    if (user.role === "client") {
+      userObj.waterPreferences = normalizeWaterPreferences(user);
+    }
+
     res.status(200).json({
       message: "Korumalı endpoint çalışıyor",
-      user,
+      user: userObj,
     });
   } catch (error) {
     res.status(500).json({
@@ -676,6 +704,75 @@ router.get("/me", authMiddleware, async (req, res) => {
     });
   }
 });
+
+router.patch(
+  "/water-preferences",
+  authMiddleware,
+  roleMiddleware("client"),
+  async (req, res) => {
+    try {
+      const { goalMl, quickAddMl } = req.body || {};
+      if (goalMl === undefined && quickAddMl === undefined) {
+        return res.status(400).json({
+          message: "En az bir alan gönderin: goalMl, quickAddMl.",
+        });
+      }
+
+      const user = await User.findById(req.user.userId);
+
+      if (!user) {
+        return res.status(404).json({
+          message: "Kullanıcı bulunamadı.",
+        });
+      }
+
+      if (!user.waterPreferences) {
+        user.waterPreferences = {};
+      }
+
+      if (goalMl !== undefined) {
+        const g = Number(goalMl);
+        if (!Number.isFinite(g) || g < 500 || g > 5000) {
+          return res.status(400).json({
+            message: "goalMl 500 ile 5000 arasında olmalıdır.",
+          });
+        }
+        user.waterPreferences.goalMl = Math.round(g);
+      }
+
+      if (quickAddMl !== undefined) {
+        const q = Number(quickAddMl);
+        if (!WATER_QUICK_ADD_ALLOWED.includes(q)) {
+          return res.status(400).json({
+            message: `quickAddMl şu değerlerden biri olmalıdır: ${WATER_QUICK_ADD_ALLOWED.join(", ")}.`,
+          });
+        }
+        user.waterPreferences.quickAddMl = q;
+      }
+
+      const defaults = normalizeWaterPreferences(user);
+      if (user.waterPreferences.goalMl == null) {
+        user.waterPreferences.goalMl = defaults.goalMl;
+      }
+      if (user.waterPreferences.quickAddMl == null) {
+        user.waterPreferences.quickAddMl = defaults.quickAddMl;
+      }
+
+      user.markModified("waterPreferences");
+      await user.save();
+
+      res.status(200).json({
+        message: "Su tercihleri güncellendi.",
+        waterPreferences: normalizeWaterPreferences(user),
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Su tercihleri güncellenemedi.",
+        error: error.message,
+      });
+    }
+  }
+);
 
 router.post(
   "/client-link/:clientId/approve",
@@ -979,70 +1076,110 @@ router.post(
   handleAvailabilityUpdate
 );
 
+async function handleUpdateProfile(req, res) {
+  try {
+    const {
+      age,
+      gender,
+      height,
+      weight,
+      avatarEmoji,
+      profileEmoji,
+      name,
+      city,
+      specialty,
+      phone,
+      email,
+    } = req.body || {};
+
+    const user = await User.findById(req.user.userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Kullanıcı bulunamadı.",
+      });
+    }
+
+    if (name !== undefined) {
+      const trimmed = String(name).trim();
+      if (!trimmed) {
+        return res.status(400).json({
+          message: "Ad soyad boş olamaz.",
+        });
+      }
+      user.name = trimmed;
+    }
+
+    const prev = user.profile || {};
+    const updatedAge = age !== undefined ? age : prev.age;
+    const updatedGender = gender !== undefined ? gender : prev.gender || "";
+    const updatedHeight = height !== undefined ? height : prev.height;
+    const updatedWeight = weight !== undefined ? weight : prev.weight;
+    const incomingEmoji = avatarEmoji !== undefined ? avatarEmoji : profileEmoji;
+    const hasEmojiUpdate = incomingEmoji !== undefined;
+    const updatedEmoji = hasEmojiUpdate
+      ? String(incomingEmoji).trim().slice(0, 8)
+      : prev.avatarEmoji || "";
+
+    if (city !== undefined) {
+      user.city = String(city).trim();
+    }
+    if (specialty !== undefined) {
+      user.specialty = String(specialty).trim();
+    }
+    if (phone !== undefined) {
+      user.phone = String(phone).trim();
+    }
+    if (email !== undefined) {
+      user.email = String(email).trim().toLowerCase();
+    }
+
+    user.profile = {
+      age: updatedAge || null,
+      gender: updatedGender || "",
+      height: updatedHeight || null,
+      weight: updatedWeight || null,
+      bmi: calculateBmi(updatedHeight, updatedWeight),
+      photoUrl: hasEmojiUpdate ? "" : prev.photoUrl || "",
+      avatarEmoji: updatedEmoji,
+    };
+
+    if (hasEmojiUpdate && prev.photoUrl) {
+      tryRemoveLocalProfilePhoto(prev.photoUrl);
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Profil bilgileri güncellendi.",
+      user: {
+        _id: user._id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        city: user.city || "",
+        specialty: user.specialty || "",
+        profile: user.profile,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Profil güncellenirken hata oluştu.",
+      error: error.message,
+    });
+  }
+}
+
 router.patch(
   "/update-profile",
   authMiddleware,
-  async (req, res) => {
-    try {
-      const { age, gender, height, weight, avatarEmoji, name } = req.body;
-
-      const user = await User.findById(req.user.userId);
-
-      if (!user) {
-        return res.status(404).json({
-          message: "Kullanıcı bulunamadı.",
-        });
-      }
-
-      if (name !== undefined) {
-        const trimmed = String(name).trim();
-        if (!trimmed) {
-          return res.status(400).json({
-            message: "Ad soyad boş olamaz.",
-          });
-        }
-        user.name = trimmed;
-      }
-
-      const prev = user.profile || {};
-      if (prev.photoUrl) tryRemoveLocalProfilePhoto(prev.photoUrl);
-      const updatedAge = age !== undefined ? age : prev.age;
-      const updatedGender =
-        gender !== undefined ? gender : prev.gender || "";
-      const updatedHeight =
-        height !== undefined ? height : prev.height;
-      const updatedWeight =
-        weight !== undefined ? weight : prev.weight;
-      const updatedEmoji =
-        avatarEmoji !== undefined
-          ? String(avatarEmoji).trim().slice(0, 8)
-          : prev.avatarEmoji || "";
-
-      user.profile = {
-        age: updatedAge || null,
-        gender: updatedGender || "",
-        height: updatedHeight || null,
-        weight: updatedWeight || null,
-        bmi: calculateBmi(updatedHeight, updatedWeight),
-        photoUrl: "",
-        avatarEmoji: updatedEmoji,
-      };
-
-      await user.save();
-
-      res.status(200).json({
-        message: "Profil bilgileri güncellendi.",
-        name: user.name,
-        profile: user.profile,
-      });
-    } catch (error) {
-      res.status(500).json({
-        message: "Profil güncellenirken hata oluştu.",
-        error: error.message,
-      });
-    }
-  }
+  handleUpdateProfile
 );
+
+// iOS uyumluluğu: bazı istemciler PATCH /auth/me deneyebiliyor.
+// Bu uç, /auth/update-profile ile aynı güncelleme davranışını sağlar.
+router.patch("/me", authMiddleware, handleUpdateProfile);
 
 router.get(
   "/dietitian-clients",
