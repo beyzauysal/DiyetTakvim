@@ -52,7 +52,7 @@ module.exports = async function handler(req, res) {
     }
 
     const expressHandler = await getHandler();
-    return expressHandler(req, res);
+    return await expressHandler(req, res);
   } catch (error) {
     console.error("INDEX_HANDLER_ERROR", error?.message || error);
     return sendJson(res, 500, {
