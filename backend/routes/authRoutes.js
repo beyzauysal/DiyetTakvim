@@ -21,6 +21,7 @@ const {
   invalidateAllAppointmentCachesForDietitian,
   invalidateClientsCacheForDietitian,
 } = require("../services/appointmentCacheInvalidation");
+const { formatAuthUser } = require("../utils/userResponse");
 
 const router = express.Router();
 
@@ -558,23 +559,9 @@ router.post("/login", async (req, res) => {
       .json({
         message: "Giriş başarılı",
         token: accessToken,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email || null,
-          phone: user.phone || null,
-          role: user.role,
-          inviteCode: user.inviteCode || null,
-          linkedDietitian: user.linkedDietitian || null,
-          pendingDietitian: user.pendingDietitian || null,
-          specialty: user.specialty || "",
-          city: user.city || "",
-          profile: user.profile,
-          waterPreferences:
-            user.role === "client"
-              ? normalizeWaterPreferences(user)
-              : undefined,
-        },
+        user: formatAuthUser(user, {
+          normalizeWaterPrefs: normalizeWaterPreferences,
+        }),
       });
   } catch (error) {
     res.status(500).json({
@@ -629,23 +616,9 @@ router.post("/refresh", async (req, res) => {
     res.status(200).json({
       message: "Token yenilendi.",
       token: newAccessToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email || null,
-        phone: user.phone || null,
-        role: user.role,
-        inviteCode: user.inviteCode || null,
-        linkedDietitian: user.linkedDietitian || null,
-        pendingDietitian: user.pendingDietitian || null,
-        specialty: user.specialty || "",
-        city: user.city || "",
-        profile: user.profile,
-        waterPreferences:
-          user.role === "client"
-            ? normalizeWaterPreferences(user)
-            : undefined,
-      },
+      user: formatAuthUser(user, {
+        normalizeWaterPrefs: normalizeWaterPreferences,
+      }),
     });
   } catch (error) {
     res.status(401).json({
@@ -688,14 +661,11 @@ router.get("/me", authMiddleware, async (req, res) => {
       });
     }
 
-    const userObj = user.toObject();
-    if (user.role === "client") {
-      userObj.waterPreferences = normalizeWaterPreferences(user);
-    }
-
     res.status(200).json({
       message: "Korumalı endpoint çalışıyor",
-      user: userObj,
+      user: formatAuthUser(user, {
+        normalizeWaterPrefs: normalizeWaterPreferences,
+      }),
     });
   } catch (error) {
     res.status(500).json({

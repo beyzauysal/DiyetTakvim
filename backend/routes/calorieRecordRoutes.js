@@ -235,12 +235,21 @@ router.get(
   roleMiddleware("client"),
   async (req, res) => {
     try {
-      const user = await User.findById(req.user.userId).select(
-        "linkedDietitian pendingDietitian"
-      );
+      const user = await User.findById(req.user.userId)
+        .select("linkedDietitian pendingDietitian")
+        .populate("linkedDietitian", "name email specialty city")
+        .populate("pendingDietitian", "name email specialty city");
+      const linkedDietitianId = user?.linkedDietitian
+        ? String(user.linkedDietitian._id || user.linkedDietitian)
+        : null;
+      const pendingDietitianId = user?.pendingDietitian
+        ? String(user.pendingDietitian._id || user.pendingDietitian)
+        : null;
       res.status(200).json({
-        linkedDietitian: Boolean(user?.linkedDietitian),
-        pendingDietitian: Boolean(user?.pendingDietitian),
+        linkedDietitian: Boolean(linkedDietitianId),
+        linkedDietitianId,
+        pendingDietitian: Boolean(pendingDietitianId),
+        pendingDietitianId,
         openaiKeyConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),
       });
     } catch (error) {
