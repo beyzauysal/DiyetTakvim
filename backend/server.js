@@ -1,12 +1,7 @@
 /**
- * Yerel geliştirme ve Docker — Vercel'de çalıştırılmaz.
- * Vercel yanlışlıkla server.js'i yüklerse app.js'e yönlendir (listen yok).
+ * Yerel geliştirme ve Docker.
+ * Vercel entry: index.js (server.js deploy bundle'da yok).
  */
-if (process.env.VERCEL || process.env.VERCEL_ENV) {
-  module.exports = require("./app");
-  return;
-}
-
 const mongoose = require("mongoose");
 const { loadEnv } = require("./config/loadEnv");
 const { createApplication } = require("./createApp");

@@ -1,10 +1,13 @@
 const express = require("express");
+const serverless = require("serverless-http");
 const { loadEnv } = require("./config/loadEnv");
 const { ensureMongoConnected } = require("./config/mongo");
 const {
   getBackendUploadsDir,
   ensureUploadsDirExists,
 } = require("./utils/uploadsDir");
+
+let serverlessHandler = null;
 
 function requestPath(req) {
   const raw = req.path || req.url || "/";
@@ -193,6 +196,17 @@ function mountApplication(app) {
     res.status(404).json({ message: "Endpoint bulunamadı." });
   });
 
+  app.use((err, _req, res, next) => {
+    if (res.headersSent) {
+      return next(err);
+    }
+    const status =
+      err.status || (err.message === "CORS engellendi" ? 403 : 500);
+    res.status(status).json({
+      message: err.message || "Sunucu hatası",
+    });
+  });
+
   return app;
 }
 
@@ -203,8 +217,16 @@ function createApplication() {
   return app;
 }
 
+function getServerlessHandler() {
+  if (!serverlessHandler) {
+    serverlessHandler = serverless(createApplication());
+  }
+  return serverlessHandler;
+}
+
 module.exports = {
   createApplication,
+  getServerlessHandler,
   mountApplication,
   registerPublicRoutes,
   ensureMongoConnected,
