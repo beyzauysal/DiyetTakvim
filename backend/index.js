@@ -21,14 +21,43 @@ function sendNoContent(res) {
   res.end();
 }
 
-let cachedHandler = null;
+let cachedApp = null;
 
-async function getHandler() {
-  if (!cachedHandler) {
-    const { getServerlessHandler } = require("./createApp");
-    cachedHandler = getServerlessHandler();
+function getExpressApp() {
+  if (!cachedApp) {
+    const { createApplication } = require("./createApp");
+    cachedApp = createApplication();
   }
-  return cachedHandler;
+  return cachedApp;
+}
+
+function dispatchExpress(app, req, res) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+
+    res.on("finish", finish);
+    res.on("close", finish);
+
+    try {
+      app(req, res, (err) => {
+        if (err && !settled) {
+          settled = true;
+          reject(err);
+        }
+      });
+    } catch (err) {
+      if (!settled) {
+        settled = true;
+        reject(err);
+      }
+    }
+  });
 }
 
 module.exports = async function handler(req, res) {
@@ -51,13 +80,15 @@ module.exports = async function handler(req, res) {
       return sendNoContent(res);
     }
 
-    const expressHandler = await getHandler();
-    return await expressHandler(req, res);
+    const app = getExpressApp();
+    await dispatchExpress(app, req, res);
   } catch (error) {
     console.error("INDEX_HANDLER_ERROR", error?.message || error);
-    return sendJson(res, 500, {
-      message: "Sunucu hatası",
-      error: error?.message || String(error),
-    });
+    if (!res.headersSent && !res.writableEnded) {
+      return sendJson(res, 500, {
+        message: "Sunucu hatası",
+        error: error?.message || String(error),
+      });
+    }
   }
 };

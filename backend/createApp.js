@@ -1,13 +1,10 @@
 const express = require("express");
-const serverless = require("serverless-http");
 const { loadEnv } = require("./config/loadEnv");
 const { ensureMongoConnected } = require("./config/mongo");
 const {
   getBackendUploadsDir,
   ensureUploadsDirExists,
 } = require("./utils/uploadsDir");
-
-let serverlessHandler = null;
 
 function requestPath(req) {
   const raw = req.path || req.url || "/";
@@ -213,15 +210,22 @@ function mountApplication(app) {
 function createApplication() {
   const app = express();
   registerPublicRoutes(app);
-  mountApplication(app);
+
+  let mounted = false;
+  app.use((req, res, next) => {
+    if (mounted) {
+      return next();
+    }
+    mounted = true;
+    mountApplication(app);
+    return app.handle(req, res, next);
+  });
+
   return app;
 }
 
 function getServerlessHandler() {
-  if (!serverlessHandler) {
-    serverlessHandler = serverless(createApplication());
-  }
-  return serverlessHandler;
+  return createApplication();
 }
 
 module.exports = {
