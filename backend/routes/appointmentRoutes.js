@@ -16,6 +16,12 @@ const cacheService = require("../services/cacheService");
 const {
   invalidateAppointmentCachesForDietitianOnDate,
 } = require("../services/appointmentCacheInvalidation");
+const {
+  getAuthUserId,
+  mongoIdString,
+  resolveClientDietitianLink,
+  sendLinkError,
+} = require("../utils/clientLink");
 
 const router = express.Router();
 
@@ -25,15 +31,31 @@ router.post(
   roleMiddleware("client"),
   async (req, res) => {
     try {
-      const { dietitianId, appointmentDate, note } = req.body;
+      const { appointmentDate, note } = req.body;
+      let dietitianId = req.body.dietitianId;
 
-      if (!dietitianId || !appointmentDate) {
+      if (!dietitianId) {
+        const link = await resolveClientDietitianLink(getAuthUserId(req));
+        if (!link.ok) {
+          return sendLinkError(res, link);
+        }
+        dietitianId = link.linkedDietitianId;
+      }
+
+      if (!appointmentDate) {
         return res.status(400).json({
-          message: "Diyetisyen ve randevu tarihi zorunludur.",
+          message: "Randevu tarihi zorunludur.",
         });
       }
 
-      const dietitian = await User.findById(dietitianId);
+      const resolvedDietitianId = mongoIdString(dietitianId);
+      if (!resolvedDietitianId) {
+        return res.status(400).json({
+          message: "Geçerli bir diyetisyen kimliği gerekir.",
+        });
+      }
+
+      const dietitian = await User.findById(resolvedDietitianId);
 
       if (!dietitian || dietitian.role !== "dietitian") {
         return res.status(404).json({
@@ -41,7 +63,7 @@ router.post(
         });
       }
 
-      const clientUser = await User.findById(req.user.userId);
+      const clientUser = await User.findById(getAuthUserId(req));
 
       if (!clientUser || clientUser.role !== "client") {
         return res.status(404).json({
@@ -51,7 +73,7 @@ router.post(
 
       if (
         !clientUser.linkedDietitian ||
-        clientUser.linkedDietitian.toString() !== String(dietitianId)
+        clientUser.linkedDietitian.toString() !== resolvedDietitianId
       ) {
         return res.status(403).json({
           message: "Bu diyetisyen için randevu oluşturma yetkiniz yok.",
@@ -144,8 +166,8 @@ router.post(
       }
 
       const existingAppointmentForClient = await Appointment.findOne({
-        dietitian: dietitianId,
-        client: req.user.userId,
+        dietitian: resolvedDietitianId,
+        client: getAuthUserId(req),
         appointmentDate: appointmentDateObj,
         status: { $ne: "cancelled" },
       });
@@ -157,7 +179,7 @@ router.post(
       }
 
       const existingAppointmentForSlot = await Appointment.findOne({
-        dietitian: dietitianId,
+        dietitian: resolvedDietitianId,
         appointmentDate: appointmentDateObj,
         status: { $ne: "cancelled" },
       });
@@ -169,8 +191,8 @@ router.post(
       }
 
       const newAppointment = new Appointment({
-        dietitian: dietitianId,
-        client: req.user.userId,
+        dietitian: resolvedDietitianId,
+        client: getAuthUserId(req),
         appointmentDate: appointmentDateObj,
         note: note || "",
       });
@@ -191,7 +213,7 @@ router.post(
       });
 
       await invalidateAppointmentCachesForDietitianOnDate(
-        dietitianId,
+        resolvedDietitianId,
         appointmentDateObj
       );
 
@@ -208,35 +230,22 @@ router.post(
   }
 );
 
-router.get(
-  ["/available-slots", "/availability"],
-  authMiddleware,
-  roleMiddleware("client"),
-  async (req, res) => {
-    try {
-      const { date } = req.query;
+async function listAvailableSlotsHandler(req, res) {
+  try {
+    const { date } = req.query;
 
-      if (!date) {
-        return res.status(400).json({
-          message: "Tarih zorunludur. Örnek: ?date=2026-03-25",
-        });
-      }
+    if (!date) {
+      return res.status(400).json({
+        message: "Tarih zorunludur. Örnek: ?date=2026-03-25",
+      });
+    }
 
-      const clientUser = await User.findById(req.user.userId);
+    const link = await resolveClientDietitianLink(getAuthUserId(req));
+    if (!link.ok) {
+      return sendLinkError(res, link);
+    }
 
-      if (!clientUser || !clientUser.linkedDietitian) {
-        return res.status(404).json({
-          message: "Bağlı diyetisyen bulunamadı.",
-        });
-      }
-
-      const dietitian = await User.findById(clientUser.linkedDietitian);
-
-      if (!dietitian || dietitian.role !== "dietitian") {
-        return res.status(404).json({
-          message: "Geçerli bir diyetisyen bulunamadı.",
-        });
-      }
+    const dietitian = link.dietitian;
 
       const slotsKey = cacheService.cacheKeySlots(String(dietitian._id), date);
       const cachedSlots = await cacheService.getCache(slotsKey);
@@ -345,13 +354,19 @@ router.get(
         cacheService.TTL.SLOTS_SECONDS
       );
       return res.status(200).json(payload);
-    } catch (error) {
-      res.status(500).json({
-        message: "Uygun saatler alınırken hata oluştu.",
-        error: error.message,
-      });
-    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Uygun saatler alınırken hata oluştu.",
+      error: error.message,
+    });
   }
+}
+
+router.get(
+  ["/available-slots", "/availability"],
+  authMiddleware,
+  roleMiddleware("client"),
+  listAvailableSlotsHandler
 );
 
 router.get(
@@ -542,3 +557,4 @@ router.put("/:id", authMiddleware, updateAppointment);
 router.delete("/:id", authMiddleware, cancelAppointment);
 
 module.exports = router;
+module.exports.listAvailableSlotsHandler = listAvailableSlotsHandler;

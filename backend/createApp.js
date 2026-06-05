@@ -174,6 +174,12 @@ function mountApplication(app) {
   app.use("/auth", authRoutes);
   app.use("/api/appointments", appointmentRoutes);
   app.use("/appointments", appointmentRoutes);
+  app.get(
+    "/api/availability",
+    authMiddleware,
+    roleMiddleware("client"),
+    appointmentRoutes.listAvailableSlotsHandler
+  );
   app.use("/api/calorie-records", calorieRecordRoutes);
   app.use("/calorie-records", calorieRecordRoutes);
   app.use("/api/notifications", notificationRoutes);

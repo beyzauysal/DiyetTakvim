@@ -35,9 +35,14 @@ function BookAppointmentPage() {
       }
 
       if (typeof user.linkedDietitian === "object") {
-        setLinkedDietitianId(user.linkedDietitian._id);
+        setLinkedDietitianId(
+          user.linkedDietitianId ||
+            user.linkedDietitian.id ||
+            user.linkedDietitian._id ||
+            ""
+        );
       } else {
-        setLinkedDietitianId(user.linkedDietitian);
+        setLinkedDietitianId(user.linkedDietitianId || user.linkedDietitian || "");
       }
     } catch (error) {
       console.error(

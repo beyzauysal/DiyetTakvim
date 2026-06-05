@@ -18,7 +18,7 @@ function formatPopulatedUserRef(ref) {
     !ref.name
   ) {
     const id = mongoIdString(ref);
-    return id ? { id } : null;
+    return id ? { id, _id: id } : null;
   }
 
   const obj = typeof ref.toObject === "function" ? ref.toObject() : ref;
@@ -28,6 +28,7 @@ function formatPopulatedUserRef(ref) {
 
   return {
     id,
+    _id: id,
     name: obj.name || "",
     email: obj.email || null,
     inviteCode: obj.inviteCode || null,

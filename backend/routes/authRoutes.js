@@ -21,7 +21,11 @@ const {
   invalidateAllAppointmentCachesForDietitian,
   invalidateClientsCacheForDietitian,
 } = require("../services/appointmentCacheInvalidation");
-const { formatAuthUser } = require("../utils/userResponse");
+const { formatAuthUser, formatPopulatedUserRef } = require("../utils/userResponse");
+const {
+  getAuthUserId,
+  resolveClientDietitianLink,
+} = require("../utils/clientLink");
 
 const router = express.Router();
 
@@ -650,7 +654,7 @@ router.post("/logout", async (req, res) => {
 
 router.get("/me", authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId)
+    const user = await User.findById(getAuthUserId(req))
       .select("-password")
       .populate("linkedDietitian", "name email inviteCode specialty city")
       .populate("pendingDietitian", "name email inviteCode specialty city");
@@ -670,6 +674,48 @@ router.get("/me", authMiddleware, async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Kullanıcı bilgisi alınırken hata oluştu.",
+      error: error.message,
+    });
+  }
+});
+
+router.get("/link-status", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(getAuthUserId(req)).select("role");
+
+    if (!user) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı." });
+    }
+
+    if (user.role !== "client") {
+      return res.status(403).json({
+        message: "Bağlantı durumu yalnızca danışan hesapları için geçerlidir.",
+      });
+    }
+
+    const link = await resolveClientDietitianLink(user);
+
+    if (link.ok) {
+      return res.status(200).json({
+        status: "linked",
+        linkedDietitianId: link.linkedDietitianId,
+        linkedDietitian: formatPopulatedUserRef(link.dietitian),
+      });
+    }
+
+    return res.status(link.status).json({
+      status: link.code === "PENDING_APPROVAL" ? "pending" : "none",
+      message: link.message,
+      code: link.code,
+      linkedDietitianId: link.linkedDietitianId || null,
+      pendingDietitianId: link.pendingDietitianId || null,
+      pendingDietitian: link.pendingDietitian
+        ? formatPopulatedUserRef(link.pendingDietitian)
+        : null,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Bağlantı durumu alınamadı.",
       error: error.message,
     });
   }
