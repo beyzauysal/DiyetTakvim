@@ -3,7 +3,7 @@
   "installCommand": "npm ci",
   "builds": [
     {
-      "src": "api/[...all].js",
+      "src": "app.js",
       "use": "@vercel/node",
       "config": {
         "maxDuration": 30
@@ -13,7 +13,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/[...all].js"
+      "dest": "app.js"
     }
   ]
 }

@@ -3,7 +3,7 @@
   "installCommand": "cd backend && npm ci",
   "builds": [
     {
-      "src": "backend/api/[...all].js",
+      "src": "backend/app.js",
       "use": "@vercel/node",
       "config": {
         "maxDuration": 30
@@ -13,7 +13,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "backend/api/[...all].js"
+      "dest": "backend/app.js"
     }
   ]
 }
