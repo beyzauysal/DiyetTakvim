@@ -5,7 +5,7 @@ const path = require("path");
  * Yerelde backend/.env okur. Vercel'de env'ler dashboard'dan gelir; .env aranmaz.
  */
 function loadEnv() {
-  if (process.env.VERCEL) {
+  if (process.env.VERCEL || process.env.VERCEL_ENV) {
     return;
   }
 

@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { app } = require("./app");
+const { app } = require("./createApp");
 const { initRedis } = require("./config/redis");
 const { initRabbitMq } = require("./config/rabbitmq");
 

@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "installCommand": "cd backend && npm ci",
+  "builds": [
+    {
+      "src": "backend/api/[...all].js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/api/[...all].js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "backend/api/[...all].js"
+    }
+  ]
+}
