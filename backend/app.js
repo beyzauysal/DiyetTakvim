@@ -3,12 +3,10 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
-const path = require("path");
 const { getBackendUploadsDir, ensureUploadsDirExists } = require("./utils/uploadsDir");
+const { loadEnv } = require("./config/loadEnv");
 
-try {
-  require("dotenv").config({ path: path.join(__dirname, ".env") });
-} catch (_) {}
+loadEnv();
 
 const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
@@ -38,12 +36,14 @@ const corsOptions = {
     const allowedOrigins = getAllowedOrigins();
     const normalizedOrigin = origin ? origin.trim().replace(/\/$/, "") : "";
 
-    console.log("CORS kontrol:", {
-      origin,
-      normalizedOrigin,
-      envOrigins: process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "",
-      allowedOrigins,
-    });
+    if (process.env.NODE_ENV !== "production") {
+      console.log("CORS kontrol:", {
+        origin,
+        normalizedOrigin,
+        envOrigins: process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "",
+        allowedOrigins,
+      });
+    }
 
     if (!normalizedOrigin) return cb(null, true);
     if (allowedOrigins.length === 0) return cb(null, true);
@@ -84,22 +84,42 @@ async function ensureMongoConnected() {
   }
 
   if (!process.env.MONGO_URI) {
-    throw new Error("MONGO_URI tanımlı değil");
+    const hint = process.env.VERCEL
+      ? "Vercel → Settings → Environment Variables bölümüne MONGO_URI ekleyin."
+      : "backend/.env dosyasında MONGO_URI tanımlayın.";
+    throw new Error(`MONGO_URI tanımlı değil. ${hint}`);
+  }
+
+  const connectOptions = {
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 5,
+  };
+
+  if (!String(process.env.MONGO_URI).startsWith("mongodb+srv://")) {
+    connectOptions.family = 4;
   }
 
   mongoPromise = mongoose
-    .connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      family: 4,
-      maxPoolSize: 5,
-    })
+    .connect(process.env.MONGO_URI, connectOptions)
     .finally(() => {
       mongoPromise = null;
     });
 
   return mongoPromise;
 }
+
+app.get("/api/water-intake/health", (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: "diyettakvim-api",
+    mongoConfigured: Boolean(process.env.MONGO_URI),
+  });
+});
+
+app.get("/", (_req, res) => {
+  res.status(200).send("API çalışıyor");
+});
 
 app.use(async (req, res, next) => {
   if (req.method === "OPTIONS") {
@@ -116,10 +136,6 @@ app.use(async (req, res, next) => {
       error: error.message,
     });
   }
-});
-
-app.get("/api/water-intake/health", (_req, res) => {
-  res.status(200).json({ ok: true, service: "diyettakvim-api" });
 });
 
 app.get("/openapi.json", (_req, res) => {
@@ -177,10 +193,6 @@ app.use("/water-intake", waterIntakeRoutes);
 
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/testimonials", testimonialRoutes);
-
-app.get("/", (_req, res) => {
-  res.status(200).send("API çalışıyor");
-});
 
 module.exports = {
   app,

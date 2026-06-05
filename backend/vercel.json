@@ -5,5 +5,10 @@
       "source": "/api/(.*)",
       "destination": "/api/[...all]"
     }
-  ]
+  ],
+  "functions": {
+    "api/[...all].js": {
+      "maxDuration": 30
+    }
+  }
 }
