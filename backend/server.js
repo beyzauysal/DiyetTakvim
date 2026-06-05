@@ -1,48 +1,45 @@
 const mongoose = require("mongoose");
+const { loadEnv } = require("./config/loadEnv");
 const { app } = require("./createApp");
 const { initRedis } = require("./config/redis");
 const { initRabbitMq } = require("./config/rabbitmq");
 
+loadEnv();
+
 const PORT = process.env.PORT || 5050;
 
 async function startServer() {
-  try {
-    console.log("MongoDB bağlantısı başlatılıyor...");
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB bağlandı");
-  } catch (error) {
-    console.log("MongoDB bağlantı hatası:", error.message);
-    console.log(
-      "Uyarı: Sunucu yine de dinleniyor; veritabanı olmadan kayıt istekleri hata verebilir."
-    );
+  if (process.env.MONGO_URI) {
+    try {
+      console.log("MongoDB bağlantısı başlatılıyor...");
+      await mongoose.connect(process.env.MONGO_URI, {
+        serverSelectionTimeoutMS: 10000,
+        maxPoolSize: 5,
+      });
+      console.log("MongoDB bağlandı");
+    } catch (error) {
+      console.log("MongoDB bağlantı hatası:", error.message);
+      console.log("Uyarı: Sunucu dinleniyor; DB olmadan bazı istekler hata verebilir.");
+    }
+  } else {
+    console.warn("[mongo] MONGO_URI tanımlı değil — yerel sunucu DB olmadan başlıyor.");
   }
 
   try {
     await initRedis();
   } catch (e) {
-    console.error("[redis] initRedis beklenmeyen hata:", e?.message || e);
+    console.error("[redis] initRedis:", e?.message || e);
   }
 
   try {
     await initRabbitMq();
   } catch (e) {
-    console.error("[rabbitmq] initRabbitMq beklenmeyen hata:", e?.message || e);
+    console.error("[rabbitmq] initRabbitMq:", e?.message || e);
   }
 
   app.listen(PORT, () => {
     console.log(`Server ${PORT} portunda çalışıyor`);
     console.log("Su ekleme: POST /api/water-intake veya /api/water-intake/add");
-    const gh = process.env.SMTP_HOST?.trim().toLowerCase() || "";
-    const gmailSvc =
-      process.env.SMTP_SERVICE?.trim().toLowerCase() === "gmail" ||
-      gh === "smtp.gmail.com";
-    if (gmailSvc && process.env.SMTP_USER) {
-      console.log("E-posta: Gmail (nodemailer service + uygulama şifresi)");
-    } else if (process.env.SMTP_HOST) {
-      console.log("E-posta: SMTP", process.env.SMTP_HOST);
-    } else {
-      console.log("E-posta: SMTP yok — kodlar [mail:dev] ile konsolda");
-    }
   });
 }
 

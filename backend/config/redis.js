@@ -1,5 +1,7 @@
 const { createClient } = require("redis");
 
+const CONNECT_TIMEOUT_MS = 5000;
+
 let client = null;
 let connectPromise = null;
 let explicitlyDisabled = false;
@@ -17,11 +19,23 @@ function isRedisReady() {
   return Boolean(client && client.isReady);
 }
 
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(
+        () => reject(new Error(`${label} zaman aşımı (${ms}ms)`)),
+        ms
+      );
+    }),
+  ]);
+}
+
 async function initRedis() {
   const url = getRedisUrl();
   if (!url) {
     explicitlyDisabled = true;
-    console.log("[redis] REDIS_URL tanımlı değil — önbellek devre dışı (sadece veritabanı).");
+    console.warn("[redis] REDIS_URL tanımlı değil — önbellek devre dışı.");
     return;
   }
 
@@ -38,16 +52,11 @@ async function initRedis() {
       const next = createClient({
         url,
         socket: {
+          connectTimeout: CONNECT_TIMEOUT_MS,
           reconnectStrategy(retries) {
-            const delay = Math.min(retries * 150, 5_000);
-            if (retries > 0 && retries % 10 === 0) {
-              console.warn(
-                `[redis] yeniden bağlanılıyor (deneme ${retries}), ${delay}ms sonra...`
-              );
-            }
-            return delay;
+            if (retries > 3) return false;
+            return Math.min(retries * 200, 2000);
           },
-          connectTimeout: 10_000,
         },
       });
 
@@ -55,27 +64,11 @@ async function initRedis() {
         console.error("[redis] client error:", err?.message || err);
       });
 
-      next.on("reconnecting", () => {
-        console.warn("[redis] bağlantı koptu, yeniden bağlanılıyor...");
-      });
-
-      next.on("ready", () => {
-        console.log("[redis] bağlantı hazır (ready).");
-      });
-
-      await next.connect();
+      await withTimeout(next.connect(), CONNECT_TIMEOUT_MS, "Redis bağlantısı");
       client = next;
-      try {
-        const u = new URL(url);
-        console.log(
-          `[redis] sunucuya bağlanıldı: redis://${u.hostname}:${u.port || "6379"}`
-        );
-      } catch {
-        console.log("[redis] sunucuya bağlanıldı.");
-      }
+      console.log("[redis] bağlantı hazır.");
     } catch (err) {
-      console.error("[redis] ilk bağlantı başarısız:", err?.message || err);
-      console.error("[redis] API çalışmaya devam edecek; önbellek kullanılmayacak.");
+      console.error("[redis] bağlantı başarısız:", err?.message || err);
       if (client) {
         try {
           await client.quit();

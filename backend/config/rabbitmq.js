@@ -1,5 +1,7 @@
 const amqp = require("amqplib");
 
+const CONNECT_TIMEOUT_MS = 5000;
+
 let connection = null;
 let channel = null;
 let connectPromise = null;
@@ -41,13 +43,23 @@ function getRabbitMqChannel() {
   return channel;
 }
 
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(
+        () => reject(new Error(`${label} zaman aşımı (${ms}ms)`)),
+        ms
+      );
+    }),
+  ]);
+}
+
 async function initRabbitMq() {
   const url = getRabbitMqUrl();
   if (!url) {
     explicitlyDisabled = true;
-    console.log(
-      "[rabbitmq] RABBITMQ_URL tanımlı değil — event publish/consume devre dışı."
-    );
+    console.warn("[rabbitmq] RABBITMQ_URL tanımlı değil — publish/consume atlanır.");
     return;
   }
 
@@ -61,7 +73,11 @@ async function initRabbitMq() {
 
   connectPromise = (async () => {
     try {
-      connection = await amqp.connect(url);
+      connection = await withTimeout(
+        amqp.connect(url),
+        CONNECT_TIMEOUT_MS,
+        "RabbitMQ bağlantısı"
+      );
       channel = await connection.createChannel();
 
       connection.on("error", (err) => {
@@ -85,10 +101,7 @@ async function initRabbitMq() {
 
       console.log("[rabbitmq] bağlantı kuruldu.");
     } catch (err) {
-      console.error("[rabbitmq] ilk bağlantı başarısız:", err?.message || err);
-      console.error(
-        "[rabbitmq] API çalışmaya devam edecek; event publish/consume kullanılmayacak."
-      );
+      console.error("[rabbitmq] bağlantı başarısız:", err?.message || err);
       connection = null;
       channel = null;
     } finally {
@@ -101,15 +114,11 @@ async function initRabbitMq() {
 
 async function closeRabbitMq() {
   try {
-    if (channel) {
-      await channel.close();
-    }
+    if (channel) await channel.close();
   } catch (_) {}
 
   try {
-    if (connection) {
-      await connection.close();
-    }
+    if (connection) await connection.close();
   } catch (_) {}
 
   channel = null;

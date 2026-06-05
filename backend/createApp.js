@@ -1,15 +1,13 @@
-const notificationRoutes = require("./routes/notificationRoutes");
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
-const { getBackendUploadsDir, ensureUploadsDirExists } = require("./utils/uploadsDir");
+const swaggerUi = require("swagger-ui-express");
+const openapiDocument = require("./docs/openapi.json");
 const { loadEnv } = require("./config/loadEnv");
-
-loadEnv();
-
-mongoose.set("bufferCommands", false);
-
+const { ensureMongoConnected } = require("./config/mongo");
+const { getBackendUploadsDir, ensureUploadsDirExists } = require("./utils/uploadsDir");
+const authMiddleware = require("./middleware/authMiddleware");
+const roleMiddleware = require("./middleware/roleMiddleware");
 const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 const calorieRecordRoutes = require("./routes/calorieRecordRoutes");
@@ -18,12 +16,13 @@ const inviteCodeRoutes = require("./routes/inviteCodeRoutes");
 const connectionsRoutes = require("./routes/connectionsRoutes");
 const waterIntakeRoutes = require("./routes/waterIntakeRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
-const authMiddleware = require("./middleware/authMiddleware");
-const roleMiddleware = require("./middleware/roleMiddleware");
-const swaggerUi = require("swagger-ui-express");
-const openapiDocument = require("./docs/openapi.json");
+const notificationRoutes = require("./routes/notificationRoutes");
+
+loadEnv();
 
 const app = express();
+const uploadsDir = getBackendUploadsDir();
+ensureUploadsDirExists(uploadsDir);
 
 function getAllowedOrigins() {
   const env = process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "";
@@ -42,7 +41,6 @@ const corsOptions = {
       console.log("CORS kontrol:", {
         origin,
         normalizedOrigin,
-        envOrigins: process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "",
         allowedOrigins,
       });
     }
@@ -51,20 +49,13 @@ const corsOptions = {
     if (allowedOrigins.length === 0) return cb(null, true);
     if (allowedOrigins.includes(normalizedOrigin)) return cb(null, true);
 
-    console.error("CORS engellendi:", {
-      origin: normalizedOrigin,
-      allowedOrigins,
-    });
-
+    console.error("CORS engellendi:", { origin: normalizedOrigin, allowedOrigins });
     return cb(new Error("CORS engellendi"));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
-
-app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
 
 app.use((req, res, next) => {
   const p = req.path || "";
@@ -74,82 +65,46 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: "6mb" }));
-app.use(cookieParser());
-
-const uploadsDir = getBackendUploadsDir();
-ensureUploadsDirExists(uploadsDir);
-
-app.use("/uploads", express.static(uploadsDir));
-
-let mongoPromise = null;
-
-async function ensureMongoConnected() {
-  if (mongoose.connection && mongoose.connection.readyState === 1) {
-    return;
-  }
-
-  if (mongoPromise) {
-    return mongoPromise;
-  }
-
-  if (!process.env.MONGO_URI) {
-    const hint = process.env.VERCEL
-      ? "Vercel → Settings → Environment Variables bölümüne MONGO_URI ekleyin."
-      : "backend/.env dosyasında MONGO_URI tanımlayın.";
-    throw new Error(`MONGO_URI tanımlı değil. ${hint}`);
-  }
-
-  const connectOptions = {
-    serverSelectionTimeoutMS: 8000,
-    connectTimeoutMS: 8000,
-    socketTimeoutMS: 20000,
-    maxPoolSize: 1,
-  };
-
-  if (!String(process.env.MONGO_URI).startsWith("mongodb+srv://")) {
-    connectOptions.family = 4;
-  }
-
-  mongoPromise = Promise.race([
-    mongoose.connect(process.env.MONGO_URI, connectOptions),
-    new Promise((_, reject) => {
-      setTimeout(
-        () => reject(new Error("MongoDB bağlantı zaman aşımı (8s)")),
-        8000
-      );
-    }),
-  ]).finally(() => {
-    mongoPromise = null;
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: "DiyetTakvim API",
   });
-
-  return mongoPromise;
-}
+});
 
 app.get("/api/water-intake/health", (_req, res) => {
   res.status(200).json({
     ok: true,
-    service: "diyettakvim-api",
+    service: "DiyetTakvim API",
     mongoConfigured: Boolean(process.env.MONGO_URI),
   });
 });
 
-app.get("/", (_req, res) => {
-  res.status(200).send("API çalışıyor");
-});
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+app.use(express.json({ limit: "6mb" }));
+app.use(cookieParser());
+app.use("/uploads", express.static(uploadsDir));
 
-app.use(async (req, res, next) => {
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
+function needsDatabase(req) {
+  if (req.method === "OPTIONS") return false;
 
   const p = req.path || "";
-  if (
-    p === "/" ||
-    p === "/api/water-intake/health" ||
-    p === "/openapi.json" ||
-    /favicon\.(ico|png)$/i.test(p)
-  ) {
+  if (p === "/" || p === "/api/water-intake/health" || p === "/openapi.json") {
+    return false;
+  }
+  if (/favicon\.(ico|png)$/i.test(p) || p.endsWith(".ico")) {
+    return false;
+  }
+  if (p.startsWith("/uploads") || p.startsWith("/api-docs")) {
+    return false;
+  }
+
+  return true;
+}
+
+app.use(async (req, res, next) => {
+  if (!needsDatabase(req)) {
     return next();
   }
 
@@ -157,7 +112,6 @@ app.use(async (req, res, next) => {
     await ensureMongoConnected();
     next();
   } catch (error) {
-    console.error("MongoDB bağlantı hatası:", error);
     res.status(500).json({
       message: "Veritabanı bağlantı hatası",
       error: error.message,
@@ -169,14 +123,16 @@ app.get("/openapi.json", (_req, res) => {
   res.json(openapiDocument);
 });
 
-app.use(
-  "/api-docs",
-  swaggerUi.serve,
-  swaggerUi.setup(openapiDocument, {
-    customSiteTitle: "DiyetTakvim API",
-    customCss: ".swagger-ui .topbar { display: none }",
-  })
-);
+if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
+  app.use(
+    "/api-docs",
+    swaggerUi.serve,
+    swaggerUi.setup(openapiDocument, {
+      customSiteTitle: "DiyetTakvim API",
+      customCss: ".swagger-ui .topbar { display: none }",
+    })
+  );
+}
 
 if (typeof waterIntakeRoutes.handleAddWater === "function") {
   app.post(
@@ -196,28 +152,20 @@ if (typeof waterIntakeRoutes.handleAddWater === "function") {
 
 app.use("/api/auth", authRoutes);
 app.use("/auth", authRoutes);
-
 app.use("/api/appointments", appointmentRoutes);
 app.use("/appointments", appointmentRoutes);
-
 app.use("/api/calorie-records", calorieRecordRoutes);
 app.use("/calorie-records", calorieRecordRoutes);
-
 app.use("/api/notifications", notificationRoutes);
 app.use("/notifications", notificationRoutes);
-
 app.use("/api/dietitians", dietitianRoutes);
 app.use("/dietitians", dietitianRoutes);
-
 app.use("/api/invite-code", inviteCodeRoutes);
 app.use("/invite-code", inviteCodeRoutes);
-
 app.use("/api/connections", connectionsRoutes);
 app.use("/connections", connectionsRoutes);
-
 app.use("/api/water-intake", waterIntakeRoutes);
 app.use("/water-intake", waterIntakeRoutes);
-
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/testimonials", testimonialRoutes);
 
