@@ -1,5 +1,4 @@
-# Vercel yalnızca api/[...all].js üzerinden deploy edilir.
-# createApp.js ve server.js serverless entrypoint değildir.
+# Yerel sunucu / Docker — Vercel serverless'ta gerekmez
 server.js
 workers/
 Dockerfile
