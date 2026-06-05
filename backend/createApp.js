@@ -8,6 +8,8 @@ const { loadEnv } = require("./config/loadEnv");
 
 loadEnv();
 
+mongoose.set("bufferCommands", false);
+
 const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 const calorieRecordRoutes = require("./routes/calorieRecordRoutes");
@@ -64,6 +66,14 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
 
+app.use((req, res, next) => {
+  const p = req.path || "";
+  if (/favicon\.(ico|png)$/i.test(p) || p.endsWith(".ico")) {
+    return res.status(204).end();
+  }
+  next();
+});
+
 app.use(express.json({ limit: "6mb" }));
 app.use(cookieParser());
 
@@ -91,9 +101,10 @@ async function ensureMongoConnected() {
   }
 
   const connectOptions = {
-    serverSelectionTimeoutMS: 10000,
-    socketTimeoutMS: 45000,
-    maxPoolSize: 5,
+    serverSelectionTimeoutMS: 8000,
+    connectTimeoutMS: 8000,
+    socketTimeoutMS: 20000,
+    maxPoolSize: 1,
   };
 
   if (!String(process.env.MONGO_URI).startsWith("mongodb+srv://")) {
@@ -124,6 +135,16 @@ app.get("/", (_req, res) => {
 app.use(async (req, res, next) => {
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
+  }
+
+  const p = req.path || "";
+  if (
+    p === "/" ||
+    p === "/api/water-intake/health" ||
+    p === "/openapi.json" ||
+    /favicon\.(ico|png)$/i.test(p)
+  ) {
+    return next();
   }
 
   try {

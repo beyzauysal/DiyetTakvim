@@ -1,4 +1,4 @@
-# Yerel sunucu / Docker — Vercel serverless'ta gerekmez
+# Yerel sunucu / Docker — Vercel yalnızca api/[...all].js kullanır
 server.js
 workers/
 Dockerfile
