@@ -1,8 +1,6 @@
-/**
- * Vercel Express entrypoint (resmi zero-config formatı).
- * Yerel geliştirme ve Docker: npm start → server.js
- */
-const express = require("express");
+const serverless = require("serverless-http");
 const { app } = require("./createApp");
 
-module.exports = app;
+module.exports = serverless(app, {
+  binary: ["image/*", "application/octet-stream"],
+});

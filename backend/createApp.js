@@ -111,11 +111,17 @@ async function ensureMongoConnected() {
     connectOptions.family = 4;
   }
 
-  mongoPromise = mongoose
-    .connect(process.env.MONGO_URI, connectOptions)
-    .finally(() => {
-      mongoPromise = null;
-    });
+  mongoPromise = Promise.race([
+    mongoose.connect(process.env.MONGO_URI, connectOptions),
+    new Promise((_, reject) => {
+      setTimeout(
+        () => reject(new Error("MongoDB bağlantı zaman aşımı (8s)")),
+        8000
+      );
+    }),
+  ]).finally(() => {
+    mongoPromise = null;
+  });
 
   return mongoPromise;
 }
@@ -214,6 +220,10 @@ app.use("/water-intake", waterIntakeRoutes);
 
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/testimonials", testimonialRoutes);
+
+app.use((_req, res) => {
+  res.status(404).json({ message: "Endpoint bulunamadı." });
+});
 
 module.exports = {
   app,
