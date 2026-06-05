@@ -1,11 +1,21 @@
+/**
+ * Yerel geliştirme ve Docker — Vercel'de çalıştırılmaz.
+ * Vercel yanlışlıkla server.js'i yüklerse app.js'e yönlendir (listen yok).
+ */
+if (process.env.VERCEL || process.env.VERCEL_ENV) {
+  module.exports = require("./app");
+  return;
+}
+
 const mongoose = require("mongoose");
 const { loadEnv } = require("./config/loadEnv");
-const { app } = require("./createApp");
+const { createApplication } = require("./createApp");
 const { initRedis } = require("./config/redis");
 const { initRabbitMq } = require("./config/rabbitmq");
 
 loadEnv();
 
+const app = createApplication();
 const PORT = process.env.PORT || 5050;
 
 async function startServer() {
@@ -19,10 +29,14 @@ async function startServer() {
       console.log("MongoDB bağlandı");
     } catch (error) {
       console.log("MongoDB bağlantı hatası:", error.message);
-      console.log("Uyarı: Sunucu dinleniyor; DB olmadan bazı istekler hata verebilir.");
+      console.log(
+        "Uyarı: Sunucu dinleniyor; DB olmadan bazı istekler hata verebilir."
+      );
     }
   } else {
-    console.warn("[mongo] MONGO_URI tanımlı değil — yerel sunucu DB olmadan başlıyor.");
+    console.warn(
+      "[mongo] MONGO_URI tanımlı değil — yerel sunucu DB olmadan başlıyor."
+    );
   }
 
   try {

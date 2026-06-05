@@ -1,6 +1,12 @@
 {
   "version": 2,
   "installCommand": "npm ci",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/app.js"
+    }
+  ],
   "functions": {
     "app.js": {
       "maxDuration": 30
