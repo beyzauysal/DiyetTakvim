@@ -1,8 +1,19 @@
 {
   "version": 2,
-  "functions": {
-    "index.js": {
-      "maxDuration": 30
+  "installCommand": "npm ci",
+  "builds": [
+    {
+      "src": "api/[...all].js",
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 30
+      }
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/[...all].js"
+    }
+  ]
 }
