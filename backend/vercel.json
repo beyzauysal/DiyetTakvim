@@ -1,15 +1,15 @@
 {
   "version": 2,
-  "installCommand": "npm ci",
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/app.js"
+      "src": "app.js",
+      "use": "@vercel/node"
     }
   ],
-  "functions": {
-    "app.js": {
-      "maxDuration": 30
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.js"
     }
-  }
+  ]
 }
