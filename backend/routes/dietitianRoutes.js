@@ -4,6 +4,7 @@ const User = require("../models/User");
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 const cacheService = require("../services/cacheService");
+const { getAuthUserId } = require("../utils/clientLink");
 
 const router = express.Router();
 
@@ -87,7 +88,7 @@ router.get(
   async (req, res) => {
     try {
       const paramId = mongoIdString(req.params.id);
-      const tokenUserId = mongoIdString(req.user?.userId ?? req.user?.id);
+      const tokenUserId = getAuthUserId(req);
       if (!paramId || !tokenUserId || !sameMongoId(paramId, tokenUserId)) {
         return res.status(403).json({
           message: "Yalnızca kendi danışan listenizi görüntüleyebilirsiniz.",

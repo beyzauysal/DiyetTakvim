@@ -2,11 +2,26 @@ const express = require("express");
 const router = express.Router();
 const Notification = require("../models/Notification");
 const authMiddleware = require("../middleware/authMiddleware");
+const { getAuthUserId, mongoIdString } = require("../utils/clientLink");
+
+function mapRelatedUser(ref) {
+  if (!ref) return null;
+  const obj = typeof ref.toObject === "function" ? ref.toObject() : ref;
+  const id = mongoIdString(obj._id || obj.id || obj);
+  if (!id) return null;
+  return {
+    id,
+    _id: id,
+    name: obj.name || "",
+    email: obj.email || null,
+  };
+}
 
 router.patch("/read-all", authMiddleware, async (req, res) => {
   try {
+    const userId = getAuthUserId(req);
     const result = await Notification.updateMany(
-      { user: req.user.userId, isRead: false },
+      { user: userId, isRead: false },
       { $set: { isRead: true } }
     );
 
@@ -24,12 +39,19 @@ router.patch("/read-all", authMiddleware, async (req, res) => {
 
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const notifications = await Notification.find({
-      user: req.user.userId,
+    const userId = getAuthUserId(req);
+    const rows = await Notification.find({
+      user: userId,
     })
       .sort({ createdAt: -1 })
       .populate("relatedAppointment")
       .populate("relatedUser", "name email");
+
+    const notifications = rows.map((row) => {
+      const obj = row.toObject();
+      obj.relatedUser = mapRelatedUser(obj.relatedUser);
+      return obj;
+    });
 
     res.status(200).json({ notifications });
   } catch (error) {
@@ -50,7 +72,7 @@ router.patch("/read/:id", authMiddleware, async (req, res) => {
       });
     }
 
-    if (notification.user.toString() !== req.user.userId) {
+    if (mongoIdString(notification.user) !== getAuthUserId(req)) {
       return res.status(403).json({
         message: "Bu bildirimi güncelleme yetkiniz yok.",
       });
@@ -81,7 +103,7 @@ router.delete("/:id", authMiddleware, async (req, res) => {
       });
     }
 
-    if (notification.user.toString() !== req.user.userId) {
+    if (mongoIdString(notification.user) !== getAuthUserId(req)) {
       return res.status(403).json({
         message: "Bu bildirimi silme yetkiniz yok.",
       });

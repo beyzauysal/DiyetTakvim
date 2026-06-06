@@ -24,12 +24,25 @@ const {
 const { formatAuthUser, formatPopulatedUserRef } = require("../utils/userResponse");
 const {
   getAuthUserId,
+  mongoIdString,
   resolveClientDietitianLink,
 } = require("../utils/clientLink");
 
 const router = express.Router();
 
 const WATER_QUICK_ADD_ALLOWED = [100, 150, 200, 250, 300, 500];
+
+function mapClientSummary(client) {
+  const obj = typeof client.toObject === "function" ? client.toObject() : client;
+  return {
+    id: String(obj._id),
+    _id: String(obj._id),
+    name: obj.name,
+    email: obj.email,
+    profile: obj.profile,
+    createdAt: obj.createdAt,
+  };
+}
 
 function normalizeWaterPreferences(user) {
   const wp = user && user.waterPreferences;
@@ -79,7 +92,7 @@ function calculateBmi(height, weight) {
 function createAccessToken(user) {
   return jwt.sign(
     {
-      userId: user._id,
+      userId: String(user._id),
       role: user.role,
       email: user.email || "",
       phone: user.phone || "",
@@ -92,7 +105,7 @@ function createAccessToken(user) {
 function createRefreshToken(user) {
   return jwt.sign(
     {
-      userId: user._id,
+      userId: String(user._id),
     },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: "30d" }
@@ -807,32 +820,34 @@ router.post(
       }
       if (
         !client.pendingDietitian ||
-        client.pendingDietitian.toString() !== String(req.user.userId)
+        mongoIdString(client.pendingDietitian) !== getAuthUserId(req)
       ) {
         return res.status(403).json({
           message: "Bu danışan sizin için bekleyen bir bağlantı isteğinde değil.",
         });
       }
 
+      const dietitianId = getAuthUserId(req);
+
       await User.findByIdAndUpdate(clientId, {
-        $set: { linkedDietitian: req.user.userId },
+        $set: { linkedDietitian: dietitianId },
         $unset: { pendingDietitian: "" },
       });
 
-      await invalidateClientsCacheForDietitian(req.user.userId);
+      await invalidateClientsCacheForDietitian(dietitianId);
 
-      const dietitian = await User.findById(req.user.userId).select("name");
+      const dietitian = await User.findById(dietitianId).select("name");
 
       await createNotification({
         user: clientId,
         type: "client_link_approved",
         title: "Diyetisyen bağlantınız onaylandı",
         message: `${dietitian?.name || "Diyetisyeniniz"} sizinle çalışmayı kabul etti. Randevu ve beslenme kayıtlarını kullanabilirsiniz.`,
-        relatedUser: req.user.userId,
+        relatedUser: dietitianId,
       });
 
       await Notification.deleteMany({
-        user: req.user.userId,
+        user: dietitianId,
         type: "client_link_request",
         relatedUser: clientId,
       });
@@ -868,29 +883,31 @@ router.post(
       }
       if (
         !client.pendingDietitian ||
-        client.pendingDietitian.toString() !== String(req.user.userId)
+        mongoIdString(client.pendingDietitian) !== getAuthUserId(req)
       ) {
         return res.status(403).json({
           message: "Bu danışan sizin için bekleyen bir bağlantı isteğinde değil.",
         });
       }
 
+      const dietitianId = getAuthUserId(req);
+
       await User.findByIdAndUpdate(clientId, {
         $unset: { pendingDietitian: "" },
       });
 
-      const dietitian = await User.findById(req.user.userId).select("name");
+      const dietitian = await User.findById(dietitianId).select("name");
 
       await createNotification({
         user: clientId,
         type: "client_link_rejected",
         title: "Bağlantı isteği reddedildi",
         message: `${dietitian?.name || "Diyetisyen"} bağlantı isteğinizi kabul etmedi. Farklı bir diyetisyenin davet koduyla yeni kayıt veya destek ile iletişime geçebilirsiniz.`,
-        relatedUser: req.user.userId,
+        relatedUser: dietitianId,
       });
 
       await Notification.deleteMany({
-        user: req.user.userId,
+        user: dietitianId,
         type: "client_link_request",
         relatedUser: clientId,
       });
@@ -1203,16 +1220,27 @@ router.get(
   roleMiddleware("dietitian"),
   async (req, res) => {
     try {
-      const clients = await User.find({
-        role: "client",
-        linkedDietitian: req.user.userId,
-      })
-        .select("name email profile createdAt")
-        .sort({ createdAt: -1 });
+      const dietitianId = getAuthUserId(req);
+
+      const [linkedClients, pendingClients] = await Promise.all([
+        User.find({
+          role: "client",
+          linkedDietitian: dietitianId,
+        })
+          .select("name email profile createdAt")
+          .sort({ createdAt: -1 }),
+        User.find({
+          role: "client",
+          pendingDietitian: dietitianId,
+        })
+          .select("name email profile createdAt")
+          .sort({ createdAt: -1 }),
+      ]);
 
       res.status(200).json({
         message: "Diyetisyene bağlı danışanlar getirildi.",
-        clients,
+        clients: linkedClients.map(mapClientSummary),
+        pendingClients: pendingClients.map(mapClientSummary),
       });
     } catch (error) {
       res.status(500).json({

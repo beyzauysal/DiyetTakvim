@@ -52,7 +52,9 @@ function NotificationsPage({ role }) {
 
   const linkRequestClientId = (n) => {
     const ru = n.relatedUser;
-    if (ru && typeof ru === "object" && ru._id) return ru._id;
+    if (ru && typeof ru === "object") {
+      return ru.id || ru._id || null;
+    }
     if (typeof ru === "string") return ru;
     return null;
   };

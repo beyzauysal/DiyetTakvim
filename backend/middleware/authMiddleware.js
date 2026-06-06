@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const { mongoIdString } = require("../utils/clientLink");
 
 const authMiddleware = (req, res, next) => {
   try {
@@ -11,10 +12,20 @@ const authMiddleware = (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = mongoIdString(decoded.userId ?? decoded.id);
 
-    req.user = decoded;
+    if (!userId) {
+      return res.status(401).json({
+        message: "Geçersiz token: kullanıcı kimliği okunamadı.",
+      });
+    }
+
+    req.user = {
+      ...decoded,
+      userId,
+      id: userId,
+    };
 
     next();
   } catch (error) {
