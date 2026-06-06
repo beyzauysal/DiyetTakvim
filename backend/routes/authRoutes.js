@@ -1216,6 +1216,34 @@ router.patch(
 router.patch("/me", authMiddleware, handleUpdateProfile);
 
 router.get(
+  "/pending-clients",
+  authMiddleware,
+  roleMiddleware("dietitian"),
+  async (req, res) => {
+    try {
+      const dietitianId = getAuthUserId(req);
+      const pendingClients = await User.find({
+        role: "client",
+        pendingDietitian: dietitianId,
+      })
+        .select("name email profile createdAt")
+        .sort({ createdAt: -1 });
+
+      res.status(200).json({
+        message: "Onay bekleyen danışanlar getirildi.",
+        count: pendingClients.length,
+        pendingClients: pendingClients.map(mapClientSummary),
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Bağlantı istekleri alınamadı.",
+        error: error.message,
+      });
+    }
+  }
+);
+
+router.get(
   "/dietitian-clients",
   authMiddleware,
   roleMiddleware("dietitian"),

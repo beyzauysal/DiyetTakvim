@@ -125,6 +125,7 @@ const CLIENT_NAV = [
 
 const DIETITIAN_NAV = [
   { to: "/dietitian/dashboard", label: "Panel", icon: "panel", match: "d-dash" },
+  { to: "/dietitian/pending-approvals", label: "Bağlantı istekleri", icon: "users", match: "pending" },
   { to: "/dietitian/clients", label: "Danışanlar", icon: "users", match: "clients" },
   { to: "/dietitian/appointments", label: "Randevular", icon: "calendar", match: "d-appt" },
   { to: "/dietitian/availability", label: "Uygunluk", icon: "clock", match: "avail" },
@@ -152,6 +153,8 @@ function navItemActive(match, pathname, hash) {
       return pathname.startsWith("/client/notifications");
     case "d-dash":
       return pathname === "/dietitian/dashboard";
+    case "pending":
+      return pathname.startsWith("/dietitian/pending-approvals");
     case "clients":
       return pathname.startsWith("/dietitian/clients");
     case "d-appt":

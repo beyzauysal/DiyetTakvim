@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell";
+import PendingClientApprovals from "../../components/dietitian/PendingClientApprovals";
 import apiClient from "../../api/apiClient";
 
 function DietitianDashboard() {
   const [appointments, setAppointments] = useState([]);
   const [clients, setClients] = useState([]);
+  const [pendingClients, setPendingClients] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [inviteCode, setInviteCode] = useState("");
@@ -55,6 +57,7 @@ function DietitianDashboard() {
 
       setAppointments(appointmentsRes.data.appointments || []);
       setClients(clientsRes.data.clients || []);
+      setPendingClients(clientsRes.data.pendingClients || []);
       setMonthlySummary(monthlySummaryRes.data.summary || []);
       setNotifications(notificationsRes.data.notifications || []);
 
@@ -216,6 +219,13 @@ function DietitianDashboard() {
       notificationCount={unreadNotificationsCount}
     >
       <div className="dashboard-page">
+        {pendingClients.length > 0 ? (
+          <PendingClientApprovals
+            pendingClients={pendingClients}
+            onUpdated={fetchDashboardData}
+          />
+        ) : null}
+
         <div className="invite-code-banner">
           <div className="invite-code-banner__text">
             <strong>Danışan davet kodunuz</strong>
@@ -272,6 +282,31 @@ function DietitianDashboard() {
           <div className="dashboard-card dashboard-stat-card">
             <h3>Bu Ay Randevu</h3>
             <p className="dashboard-number">{thisMonthTotalAppointments}</p>
+          </div>
+
+          <div className="dashboard-card dashboard-stat-card">
+            <h3>Onay Bekleyen</h3>
+            <p
+              className={`dashboard-number${
+                pendingClients.length > 0 ? " dashboard-number--alert" : ""
+              }`}
+            >
+              {pendingClients.length}
+            </p>
+            {pendingClients.length > 0 ? (
+              <Link
+                to="/dietitian/pending-approvals"
+                style={{
+                  display: "inline-block",
+                  marginTop: 8,
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: "var(--accent-dark)",
+                }}
+              >
+                Onayla →
+              </Link>
+            ) : null}
           </div>
 
           <div className="dashboard-card dashboard-stat-card">

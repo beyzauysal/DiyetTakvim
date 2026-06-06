@@ -14,6 +14,7 @@ import ClientsPage from "../pages/dietitian/ClientsPage";
 import ClientDetailPage from "../pages/dietitian/ClientDetailPage";
 import DietitianAppointmentsPage from "../pages/dietitian/AppointmentsPage";
 import DietitianProfilePage from "../pages/dietitian/ProfilePage";
+import PendingApprovalsPage from "../pages/dietitian/PendingApprovalsPage";
 import AvailabilityPage from "../pages/dietitian/AvailabilityPage";
 
 import ClientDashboard from "../pages/client/ClientDashboard";
@@ -39,6 +40,14 @@ function AppRouter() {
         element={
           <ProtectedRoute allowedRole="dietitian">
             <DietitianDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dietitian/pending-approvals"
+        element={
+          <ProtectedRoute allowedRole="dietitian">
+            <PendingApprovalsPage />
           </ProtectedRoute>
         }
       />

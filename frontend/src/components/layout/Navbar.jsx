@@ -19,6 +19,7 @@ function Navbar({ role }) {
 
   const dietitianLinks = [
     { to: "/dietitian/dashboard", label: "Panel" },
+    { to: "/dietitian/pending-approvals", label: "Bağlantı istekleri" },
     { to: "/dietitian/clients", label: "Danışanlar" },
     { to: "/dietitian/appointments", label: "Randevular" },
     { to: "/dietitian/availability", label: "Uygunluk" },
@@ -44,6 +45,10 @@ function Navbar({ role }) {
       to === "/dietitian/clients" &&
       location.pathname.startsWith("/dietitian/clients/")
     ) {
+      return true;
+    }
+
+    if (to === "/dietitian/pending-approvals" && location.pathname.startsWith("/dietitian/pending-approvals")) {
       return true;
     }
 
