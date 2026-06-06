@@ -1,13 +1,14 @@
 const mongoose = require("mongoose");
+const { mongoIdString } = require("./clientLink");
 
-function mongoIdString(value) {
-  if (value == null) return null;
-  if (typeof value === "string") return value;
-  if (value instanceof mongoose.Types.ObjectId) return String(value);
-  if (value._id) return String(value._id);
-  if (value.id) return String(value.id);
-  return String(value);
-}
+const DEFAULT_AVAILABILITY = {
+  workingDays: [],
+  workStart: "",
+  workEnd: "",
+  breakStart: "",
+  breakEnd: "",
+  slotDuration: 30,
+};
 
 function formatPopulatedUserRef(ref) {
   if (ref == null) return null;
@@ -59,6 +60,11 @@ function formatAuthUser(user, { normalizeWaterPrefs } = {}) {
     profile: user.profile,
   };
 
+  if (user.role === "dietitian") {
+    payload.availability = user.availability || { ...DEFAULT_AVAILABILITY };
+    payload.inviteCodes = Array.isArray(user.inviteCodes) ? user.inviteCodes : [];
+  }
+
   if (user.role === "client" && typeof normalizeWaterPrefs === "function") {
     payload.waterPreferences = normalizeWaterPrefs(user);
   }
@@ -70,4 +76,5 @@ module.exports = {
   formatAuthUser,
   formatPopulatedUserRef,
   mongoIdString,
+  DEFAULT_AVAILABILITY,
 };

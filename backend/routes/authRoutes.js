@@ -747,7 +747,7 @@ router.patch(
         });
       }
 
-      const user = await User.findById(req.user.userId);
+      const user = await User.findById(getAuthUserId(req));
 
       if (!user) {
         return res.status(404).json({
@@ -937,7 +937,7 @@ async function handleDeleteAccount(req, res) {
       });
     }
 
-    const userId = String(req.user.userId || req.user.id || "");
+    const userId = getAuthUserId(req) || "";
     if (!userId) {
       return res.status(401).json({ message: "Oturum geçersiz." });
     }
@@ -1062,7 +1062,8 @@ async function handleAvailabilityUpdate(req, res) {
       slotDuration,
     } = req.body;
 
-    const user = await User.findById(req.user.userId);
+    const userId = getAuthUserId(req);
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({
@@ -1081,7 +1082,7 @@ async function handleAvailabilityUpdate(req, res) {
 
     await user.save();
 
-    await invalidateAllAppointmentCachesForDietitian(req.user.userId);
+    await invalidateAllAppointmentCachesForDietitian(userId);
 
     res.status(200).json({
       message: "Çalışma saatleri güncellendi.",
@@ -1125,7 +1126,7 @@ async function handleUpdateProfile(req, res) {
       email,
     } = req.body || {};
 
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(getAuthUserId(req));
 
     if (!user) {
       return res.status(404).json({

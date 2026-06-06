@@ -100,10 +100,23 @@ function AvailabilityPage() {
         slotDuration: formData.slotDuration,
       };
 
-      await apiClient.patch("/api/auth/update-availability", payload);
+      const response = await apiClient.patch("/api/auth/update-availability", payload);
+
+      if (response.data?.availability) {
+        const availability = response.data.availability;
+        setFormData({
+          workingDays: availability.workingDays || [],
+          workStart: availability.workStart || "",
+          workEnd: availability.workEnd || "",
+          breakStart: availability.breakStart || "",
+          breakEnd: availability.breakEnd || "",
+          slotDuration: availability.slotDuration || 30,
+        });
+      } else {
+        await fetchAvailability();
+      }
 
       alert("Uygunluk saatleri güncellendi.");
-      fetchAvailability();
     } catch (error) {
       console.error(
         "Uygunluk bilgileri güncellenemedi:",
